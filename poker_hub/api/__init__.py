@@ -1,3 +1,3 @@
 """
-API module for the Poker Hub application.
+API module for the Poker Hud application.
 """

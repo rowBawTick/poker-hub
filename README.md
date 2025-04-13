@@ -1,4 +1,4 @@
-# Poker Hub
+# Poker Hud
 
 A poker statistics and analysis tool that works with PokerStars hand history files. This application provides a comprehensive dashboard for tracking and analyzing your poker performance with a clean, modern interface.
 
@@ -13,7 +13,7 @@ A poker statistics and analysis tool that works with PokerStars hand history fil
 
 ## Project Structure
 
-- `poker_hub/` - Main package
+- `poker_hud/` - Main package
   - `collector/` - Hand history collection and monitoring
   - `parser/` - Hand history parsing
   - `storage/` - Database and persistence

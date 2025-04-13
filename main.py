@@ -1,5 +1,5 @@
 """
-Main entry point for the Poker Hub application.
+Main entry point for the Poker Hud application.
 """
 import argparse
 import logging
@@ -7,9 +7,9 @@ import sys
 import time
 from pathlib import Path
 
-from poker_hub.collector.history_collector import HandHistoryCollector
-from poker_hub.parser.hand_parser import HandParser
-from poker_hub.storage.database import Database
+from poker_hud.collector.history_collector import HandHistoryCollector
+from poker_hud.parser.hand_parser import HandParser
+from poker_hud.storage.database import Database
 
 # Configure logging
 logging.basicConfig(
@@ -51,7 +51,7 @@ def monitor_command(args):
     """
     Start monitoring hand history files and API server.
     """
-    logger.info("Starting Poker Hub monitoring service")
+    logger.info("Starting Poker Hud monitoring service")
 
     # Initialize and start the hand history collector
     collector = HandHistoryCollector(args.history_path)
@@ -63,15 +63,15 @@ def monitor_command(args):
     # Start monitoring for new files
     logger.info("Starting hand history monitoring...")
     collector.start_monitoring()
-    
+
     # Start the API server in a separate thread
     import uvicorn
     import threading
-    from poker_hub.api.stats_api import app
-    
+    from poker_hud.api.stats_api import app
+
     api_host = args.api_host
     api_port = args.api_port
-    
+
     logger.info(f"Starting API server at http://{api_host}:{api_port}")
     api_thread = threading.Thread(
         target=uvicorn.run,
@@ -86,7 +86,7 @@ def monitor_command(args):
     api_thread.start()
 
     # Keep the application running
-    logger.info("Poker Hub is running. Press Ctrl+C to exit.")
+    logger.info("Poker Hud is running. Press Ctrl+C to exit.")
     try:
         while True:
             time.sleep(1)
@@ -95,7 +95,7 @@ def monitor_command(args):
     finally:
         # Clean up
         collector.stop_monitoring()
-        logger.info("Poker Hub monitoring service stopped")
+        logger.info("Poker Hud monitoring service stopped")
 
 
 def parse_command(args):
@@ -138,9 +138,9 @@ def init_db_command(args):
 
 def main():
     """
-    Main entry point for the Poker Hub application.
+    Main entry point for the Poker Hud application.
     """
-    parser = argparse.ArgumentParser(description="Poker Hub - A poker statistics and analysis tool")
+    parser = argparse.ArgumentParser(description="Poker Hud - A poker statistics and analysis tool")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # Sync command
@@ -176,7 +176,7 @@ def main():
             parser.print_help()
 
     except Exception as e:
-        logger.error(f"Error in Poker Hub: {e}", exc_info=True)
+        logger.error(f"Error in Poker Hud: {e}", exc_info=True)
         return 1
 
     return 0
