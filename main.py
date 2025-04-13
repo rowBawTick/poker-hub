@@ -49,7 +49,7 @@ def sync_command(args):
 
 def monitor_command(args):
     """
-    Start monitoring hand history files.
+    Start monitoring hand history files and API server.
     """
     logger.info("Starting Poker Hub monitoring service")
 
@@ -63,6 +63,27 @@ def monitor_command(args):
     # Start monitoring for new files
     logger.info("Starting hand history monitoring...")
     collector.start_monitoring()
+    
+    # Start the API server in a separate thread
+    import uvicorn
+    import threading
+    from poker_hub.api.stats_api import app
+    
+    api_host = args.api_host
+    api_port = args.api_port
+    
+    logger.info(f"Starting API server at http://{api_host}:{api_port}")
+    api_thread = threading.Thread(
+        target=uvicorn.run,
+        kwargs={
+            "app": app,
+            "host": api_host,
+            "port": api_port,
+            "log_level": "info"
+        },
+        daemon=True
+    )
+    api_thread.start()
 
     # Keep the application running
     logger.info("Poker Hub is running. Press Ctrl+C to exit.")
@@ -129,6 +150,8 @@ def main():
     # Monitor command
     monitor_parser = subparsers.add_parser("monitor", help="Start monitoring hand history files")
     monitor_parser.add_argument("--history-path", help="Path to hand history directory")
+    monitor_parser.add_argument("--api-host", help="Host for the API server", default="127.0.0.1")
+    monitor_parser.add_argument("--api-port", help="Port for the API server", type=int, default=8000)
 
     # Parse command
     parse_parser = subparsers.add_parser("parse", help="Parse a hand history file")
