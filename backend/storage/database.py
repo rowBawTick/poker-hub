@@ -33,8 +33,9 @@ class Hand(Base):
     tournament_id = Column(String, index=True, nullable=True)
     game_type = Column(String)
     date_time = Column(DateTime)
-    small_blind = Column(Float)
-    big_blind = Column(Float)
+    small_blind = Column(Float, nullable=False, default=0)
+    big_blind = Column(Float, nullable=False, default=0)
+    ante = Column(Float, nullable=True)
     pot = Column(Float)
     rake = Column(Float)
     board = Column(String)  # Stored as space-separated cards
@@ -213,8 +214,9 @@ class Database:
                 tournament_id=hand_data['tournament_id'],
                 game_type=hand_data['game_type'],
                 date_time=hand_data['date_time'],
-                small_blind=float(hand_data['small_blind']) if hand_data['small_blind'] else None,
-                big_blind=float(hand_data['big_blind']) if hand_data['big_blind'] else None,
+                small_blind=float(hand_data['small_blind']) if hand_data['small_blind'] is not None else 0,
+                big_blind=float(hand_data['big_blind']) if hand_data['big_blind'] is not None else 0,
+                ante=hand_data.get('ante'),
                 pot=hand_data['pot'],
                 rake=hand_data['rake'],
                 board=' '.join(hand_data['board']) if hand_data['board'] else None
@@ -225,6 +227,9 @@ class Database:
             # Add players
             player_objects = {}
             for player_name, player_data in hand_data['players'].items():
+                # Check if the player showed cards at showdown
+                showed_cards = player_data.get('showed_cards', False)
+                
                 player = Player(
                     hand_id=hand.id,
                     name=player_name,

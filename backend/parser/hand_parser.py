@@ -17,11 +17,17 @@ class HandParser:
     """
     
     # Regular expressions for parsing different parts of a hand history
+    # For tournament hands, we need to extract the blinds from the format: Level IX (100/200)
+    TOURNAMENT_BLIND_PATTERN = re.compile(r"Level [XVI]+ \((\d+)/(\d+)\)")
+    
     HAND_HEADER_PATTERN = re.compile(
         r"PokerStars (?:Game|Hand) #(\d+): "  # Hand ID
-        r"(?:Tournament #(\d+), |Hold'em No Limit \((\$\d+)/\$(\d+)\) - )"  # Tournament ID or blinds
-        r"(.*?) \[(\d{4}/\d{2}/\d{2}) (\d{1,2}:\d{2}:\d{2}) (?:ET|UTC)\]"  # Game type, date, time
+        r"(?:Tournament #(\d+), .*?|Hold'em No Limit \((\$\d+)/\$(\d+)\) - )"  # Tournament ID or cash game blinds
+        r"(.*?) \[(\d{4}/\d{2}/\d{2}) (\d{1,2}:\d{2}:\d{2}) (?:ET|UTC|WET)(?:.*)\]"  # Game type, date, time
     )
+    
+    # Pattern to extract ante from tournament hands
+    ANTE_PATTERN = re.compile(r"(.*?): posts the ante (\d+)")
     
     PLAYER_PATTERN = re.compile(
         r"Seat (\d+): (.*?) \(\$?([\d,]+(?:\.\d+)?) in chips\)"  # Seat, player name, stack
@@ -124,20 +130,44 @@ class HandParser:
         except ValueError:
             date_time = None
         
+        # Extract game type, date, and time
+        game_type = header_match.group(5)
+        date_str = header_match.group(6)
+        time_str = header_match.group(7)
+        
+        # For cash games, blinds are in the header
+        small_blind = None
+        big_blind = None
+        
+        if tournament_id:
+            # For tournament hands, we need to extract blinds from the first line
+            # Example: "PokerStars Hand #255494979606: Tournament #3872575757, $0.48+$0.50+$0.12 USD Hold'em No Limit - Level IX (100/200)"
+            tournament_blind_match = self.TOURNAMENT_BLIND_PATTERN.search(lines[0])
+            if tournament_blind_match:
+                small_blind = tournament_blind_match.group(1)
+                big_blind = tournament_blind_match.group(2)
+            else:
+                logger.warning(f"Could not extract tournament blinds from: {lines[0]}")
+        else:
+            # For cash games
+            small_blind = header_match.group(3)
+            big_blind = header_match.group(4)
+
         # Initialize hand data
         hand_data = {
             'hand_id': hand_id,
             'tournament_id': tournament_id,
             'game_type': game_type,
             'date_time': date_time,
-            'small_blind': small_blind.replace('$', '') if small_blind else None,
-            'big_blind': big_blind if big_blind else None,
+            'small_blind': float(small_blind.replace('$', '')) if small_blind else None,
+            'big_blind': float(big_blind) if big_blind else None,
             'players': {},
             'actions': [],
             'board': [],
             'winners': [],
             'pot': None,
             'rake': None,
+            'ante': None,
         }
         
         # Parse players
@@ -152,6 +182,13 @@ class HandParser:
                     'stack': stack,
                     'cards': None,
                 }
+        
+        # Parse antes
+        for line in lines:
+            ante_match = self.ANTE_PATTERN.search(line)
+            if ante_match and hand_data['ante'] is None:
+                # Just record the ante amount once, it's the same for all players
+                hand_data['ante'] = float(ante_match.group(2))
         
         # Parse actions
         current_street = 'preflop'
@@ -227,6 +264,7 @@ class HandParser:
                 cards = showdown_match.group(2).split()
                 if player_name in hand_data['players']:
                     hand_data['players'][player_name]['cards'] = cards
+                    hand_data['players'][player_name]['showed_cards'] = True
         
         # Parse summary
         for line in lines:
