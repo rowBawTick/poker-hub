@@ -34,33 +34,28 @@ A poker statistics and analysis tool that works with PokerStars hand history fil
 
 ## Setup
 
-### 1. Backend Setup
-
-1. Create and activate a virtual environment (recommended) from the project root:
+1. Create a virtual environment and activate it (the only time to specify python3)
    ```bash
-    # On macOS/Linux
    python3 -m venv venv
-   source venv/bin/activate
-   
-   # On Windows
-   python -m venv venv
+   # On Mac: 
+   source venv/bin/activate  
+   # On Windows: 
    venv\Scripts\activate
    ```
 
-2. Install Python dependencies:
+2. Install dependencies and the backend package in development mode:
    ```bash
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
+   pip install -e backend
    ```
+   
+   This installs the backend package in development mode, which allows you to make changes to the code without having to reinstall it.
 
-2. Configure the environment:
-   - Create a `.env` file in the project root
-   - Add your PokerStars hand history path:
-     ```
-     HAND_HISTORY_PATH=C:\Users\username\AppData\Local\PokerStars.UK\HandHistory\yourusername
-     ```
-     (Replace with your actual path)
+3. Configure the environment:
+   - Create your `.env` file by copying the `.env.example` file in the project root and add your PokerStars hand 
+   history path 
 
-3. Initialize the database:
+4. Initialize the database:
    ```bash
    python main.py init-db
    ```
@@ -137,6 +132,19 @@ The poker_notes module allows you to import and export PokerStars player notes.
 
 For more details, see the [Notes README](backend/poker_notes/README.md).
 
+## Testing
+
+### Running All Tests
+
+```bash
+# Make sure your virtual environment is activated and backend package is installed
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -e backend  # Only needed first time
+
+# Run all tests from the project root
+python -m unittest discover -s backend/tests
+```
+
 ## Syncing Hand Histories
 
 When you restart the application or want to manually sync your hand histories:
@@ -182,7 +190,6 @@ Click on any player name to view detailed statistics:
 1. Ensure the backend server is running (`python main.py monitor`)
 2. Check that the API server is running at http://localhost:8000
 3. Verify the proxy settings in `frontend/vue.config.js`
-
 
 ### Building for Production
 
