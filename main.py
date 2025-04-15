@@ -136,6 +136,35 @@ def init_db_command(args):
     logger.info("Database initialized")
 
 
+def api_command(args):
+    """
+    Start only the API server without monitoring for new hand history files.
+    """
+    logger.info("Starting Poker Hud API server only")
+
+    # Start the API server
+    import uvicorn
+    from backend.api.stats_api import app
+
+    api_host = args.api_host
+    api_port = args.api_port
+
+    logger.info(f"Starting API server at http://{api_host}:{api_port}")
+    logger.info("Poker Hud API is running. Press Ctrl+C to exit.")
+    
+    try:
+        uvicorn.run(
+            app=app,
+            host=api_host,
+            port=api_port,
+            log_level="info"
+        )
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received")
+    finally:
+        logger.info("Poker Hud API server stopped")
+
+
 def main():
     """
     Main entry point for the Poker Hud application.
@@ -153,6 +182,11 @@ def main():
     monitor_parser.add_argument("--api-host", help="Host for the API server", default="127.0.0.1")
     monitor_parser.add_argument("--api-port", help="Port for the API server", type=int, default=8000)
 
+    # API command
+    api_parser = subparsers.add_parser("api", help="Start only the API server")
+    api_parser.add_argument("--api-host", help="Host for the API server", default="127.0.0.1")
+    api_parser.add_argument("--api-port", help="Port for the API server", type=int, default=8000)
+
     # Parse command
     parse_parser = subparsers.add_parser("parse", help="Parse a hand history file")
     parse_parser.add_argument("file", help="Path to hand history file")
@@ -168,6 +202,8 @@ def main():
             sync_command(args)
         elif args.command == "monitor":
             monitor_command(args)
+        elif args.command == "api":
+            api_command(args)
         elif args.command == "parse":
             parse_command(args)
         elif args.command == "init-db":
