@@ -13,7 +13,7 @@ from backend.storage.database import Database
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed from INFO to DEBUG to see more detailed logs
+    level=logging.INFO,  # Set to INFO to reduce verbosity
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout)
@@ -52,36 +52,25 @@ def sync_command(args):
 
     # Sync the files
     num_processed = collector.sync_history_files()
-    logger.info(f"Processed {num_processed} new hand history files")
     
-    # Verify database contents after sync
+    # Display database summary after sync
     session = db.get_session()
     try:
         from backend.storage.database import Hand, HandParticipant, Player, Action, Winner
         
         # Count records in each table
-        hand_count = session.query(Hand).count()
-        participant_count = session.query(HandParticipant).count()
+        tournament_count = session.query(Hand.tournament_id).distinct().count()
         player_count = session.query(Player).count()
+        hand_count = session.query(Hand).count()
         action_count = session.query(Action).count()
-        winner_count = session.query(Winner).count()
         
-        logger.info("Database verification:")
-        logger.info(f"  - Hands: {hand_count}")
-        logger.info(f"  - Hand Participants: {participant_count}")
+        logger.info("Database summary:")
+        logger.info(f"  - Tournaments: {tournament_count}")
         logger.info(f"  - Players: {player_count}")
+        logger.info(f"  - Hands: {hand_count}")
         logger.info(f"  - Actions: {action_count}")
-        logger.info(f"  - Winners: {winner_count}")
-        
-        # List a few hands for verification
-        if hand_count > 0:
-            hands = session.query(Hand).order_by(Hand.id.desc()).limit(5).all()
-            logger.info("Recent hands:")
-            for hand in hands:
-                logger.info(f"  - Hand ID: {hand.hand_id}, Tournament: {hand.tournament_id}, Game: {hand.game_type}")
-                logger.info(f"    Participants: {len(hand.participants)}, Actions: {len(hand.actions)}, Winners: {len(hand.winners)}")
     except Exception as e:
-        logger.error(f"Error verifying database: {e}")
+        logger.error(f"Error getting database summary: {e}")
     finally:
         db.close_session(session)
     

@@ -110,14 +110,13 @@ class HandHistoryCollector:
         finally:
             self.database.close_session(session)
 
-        logger.info(f"Processing hand history file: {file_path}")
-
+        # Process the file without excessive logging
         try:
-            # Parse the file - this will raise an exception if parsing fails
+            # Parse the file
             hands = self.parser.parse_file(file_path)
             
             if not hands:
-                logger.warning(f"No hands found in file: {file_path}")
+                logger.info(f"No hands found in file: {file_path.name}")
                 self.database.mark_file_processed(file_path_str, 0, "no_hands", "No hands found in file")
                 return
                 
@@ -127,8 +126,6 @@ class HandHistoryCollector:
             # Mark as successfully processed
             self.database.mark_file_processed(file_path_str, len(hands), "processed")
             self.processed_files.add(file_path_str)
-
-            logger.info(f"Successfully processed file with {len(hands)} hands: {file_path}")
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
             # Mark as error in database but DO NOT add to processed_files set
@@ -145,12 +142,18 @@ class HandHistoryCollector:
         files = self.get_history_files()
         count = 0
 
-        for file_path in files:
-            if str(file_path) not in self.processed_files:
+        # Process only unprocessed files
+        unprocessed_files = [f for f in files if str(f) not in self.processed_files]
+        
+        if unprocessed_files:
+            logger.info(f"Found {len(unprocessed_files)} unprocessed hand history files")
+            
+            for file_path in unprocessed_files:
                 self.process_file(file_path)
                 count += 1
+        else:
+            logger.info("No new hand history files to process")
 
-        logger.info(f"Synced {count} new hand history files")
         return count
 
     def start_monitoring(self) -> None:

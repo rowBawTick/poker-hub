@@ -98,7 +98,7 @@ class HandParser:
                     error_msg = f"Error parsing hand #{i+1}: {str(e)}"
                     logger.error(error_msg)
                     errors.append(error_msg)
-                    logger.debug(f"Hand text: {hand_text[:200]}...")
+                    # Hand text debug logging removed to reduce verbosity
             
             # Log the results
             logger.info(f"Parsed {len(hands)} hands from file: {file_path}")

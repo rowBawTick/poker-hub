@@ -283,14 +283,19 @@ class Database:
         """
         session = self.get_session()
         try:
-            # Debug: Log the hand data keys and some values
-            logger.debug(f"Storing hand: {hand_data['hand_id']} with keys: {list(hand_data.keys())}")
-            logger.debug(f"Hand details: tournament_id={hand_data['tournament_id']}, game_type={hand_data['game_type']}, participants={len(hand_data['participants'])}")
+            # Track tournaments we've seen to avoid duplicate logging
+            if not hasattr(self, '_processed_tournaments'):
+                self._processed_tournaments = set()
+                
+            # Only log when processing a new tournament
+            tournament_id = hand_data.get('tournament_id')
+            if tournament_id and tournament_id not in self._processed_tournaments:
+                self._processed_tournaments.add(tournament_id)
+                logger.info(f"Processing tournament: {tournament_id} - {hand_data.get('game_type', '')}")
             
             # Check if hand already exists
             existing_hand = session.query(Hand).filter(Hand.hand_id == hand_data['hand_id']).first()
             if existing_hand:
-                logger.debug(f"Hand already exists in database: {hand_data['hand_id']}")
                 return
 
             # Create new hand with proper handling of None values
@@ -501,32 +506,12 @@ class Database:
                 
                 session.add(winner)
 
-            # Debug: Log what we're about to commit
-            participant_count = len(hand_data.get('participants', []))
-            action_count = len(hand_data.get('actions', []))
-            winner_count = len(hand_data.get('winners', []))
-            
-            logger.debug(f"About to commit: 1 hand, {participant_count} participants, {action_count} actions, {winner_count} winners")
-            
             # Commit the transaction
             session.commit()
-            
-            # Verify the hand was actually stored
-            verification_hand = session.query(Hand).filter(Hand.hand_id == hand_data['hand_id']).first()
-            if verification_hand:
-                logger.debug(f"Successfully stored hand in database: {hand_data['hand_id']} (ID: {verification_hand.id})")
-            else:
-                logger.error(f"CRITICAL: Hand {hand_data['hand_id']} was not found in database after commit!")
                 
         except Exception as e:
             session.rollback()
-            logger.error(f"Error storing hand: {e}")
-            # Log more detailed error information for debugging
-            import traceback
-            logger.error(f"Error details: {traceback.format_exc()}")
-            
-            # Debug: Log specific parts of the hand data that might be causing issues
-            logger.error(f"Problem hand data: hand_id={hand_data['hand_id']}, date_time={hand_data['date_time']}, pot={hand_data['pot']}, rake={hand_data['rake']}")
+            logger.error(f"Error storing hand {hand_data.get('hand_id')}: {e}")
             
         finally:
             self.close_session(session)
@@ -538,7 +523,48 @@ class Database:
         Args:
             hands: List of dictionaries containing parsed hand data.
         """
+        # Initialize counters
+        stats = {
+            'tournaments': set(),
+            'players': set(),
+            'hands': 0,
+            'actions': 0,
+            'participants': 0
+        }
+        
+        # Process each hand
         for hand_data in hands:
+            # Update statistics
+            if hand_data.get('tournament_id'):
+                stats['tournaments'].add(hand_data['tournament_id'])
+            
+            for participant in hand_data.get('participants', []):
+                player_name = participant.get('name')
+                if player_name:
+                    stats['players'].add(player_name)
+            
+            stats['hands'] += 1
+            stats['actions'] += len(hand_data.get('actions', []))
+            stats['participants'] += len(hand_data.get('participants', []))
+            
+            # Store the hand
             self.store_hand(hand_data)
 
-        logger.info(f"Stored {len(hands)} hands in database")
+        # Log summary in the requested order
+        logger.info("Processing summary:")
+        
+        if stats['tournaments']:
+            tournament_str = f"{len(stats['tournaments'])} tournament{'s' if len(stats['tournaments']) != 1 else ''}"
+            if len(stats['tournaments']) <= 3:
+                tournament_ids = ', '.join(sorted(stats['tournaments']))
+                tournament_str += f" ({tournament_ids})"
+            
+            logger.info(f"  - Tournaments: {tournament_str}")
+            
+        logger.info(f"  - Players: {len(stats['players'])}")
+        
+        logger.info(f"  - Hands: {stats['hands']}")
+        
+        logger.info(f"  - Actions: {stats['actions']}")
+        
+        logger.info(f"  - Participants: {stats['participants']}")
