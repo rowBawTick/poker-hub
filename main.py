@@ -56,19 +56,23 @@ def sync_command(args):
     # Display database summary after sync
     session = db.get_session()
     try:
-        from backend.storage.database import Hand, HandParticipant, Player, Action, Winner
+        from backend.storage.database import Hand, HandParticipant, Player, Action, Pot, PotWinner
         
         # Count records in each table
         tournament_count = session.query(Hand.tournament_id).distinct().count()
         player_count = session.query(Player).count()
         hand_count = session.query(Hand).count()
         action_count = session.query(Action).count()
+        pot_count = session.query(Pot).count()
+        pot_winner_count = session.query(PotWinner).count()
         
         logger.info("Database summary:")
         logger.info(f"  - Tournaments: {tournament_count}")
-        logger.info(f"  - Players: {player_count}")
+        logger.info(f"  - Unique Players: {player_count}")
         logger.info(f"  - Hands: {hand_count}")
         logger.info(f"  - Actions: {action_count}")
+        logger.info(f"  - Pots: {pot_count}")
+        logger.info(f"  - Pot Winners: {pot_winner_count}")
     except Exception as e:
         logger.error(f"Error getting database summary: {e}")
     finally:

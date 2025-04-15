@@ -48,10 +48,11 @@ class HandParser:
         'all-in': re.compile(r"(.*?): (calls|bets|raises) \$?([\d,]+(?:\.\d+)?)(?:.* to \$?([\d,]+(?:\.\d+)?))?(?:.* and is all-in)"),
     }
     
-    # Updated pattern to handle different summary formats
-    SUMMARY_PATTERN = re.compile(r"Total pot \$?([\d,]+(?:\.\d+)?)(?:\s*\|\s*Rake \$?([\d,]+(?:\.\d+)?))?")
+    # Updated pattern to handle different summary formats including side pots
+    SUMMARY_PATTERN = re.compile(r"Total pot \$?([\d,]+(?:\.\d+)?)(?:\s*Main pot \$?([\d,]+(?:\.\d+)?)\.?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?(?:\s*Side pot(?:-\d+)? \$?([\d,]+(?:\.\d+)?)\.?)?)?(?:\s*\|\s*Rake \$?([\d,]+(?:\.\d+)?))?")
     
-    WINNER_PATTERN = re.compile(r"(.*?) collected \$?([\d,]+(?:\.\d+)?) from pot")
+    # Pattern for winners from specific pots
+    WINNER_PATTERN = re.compile(r"(.*?) collected \$?([\d,]+(?:\.\d+)?) from (?:(main|side)(?: pot)?(?:-(\d+))?|pot)")
     
     SHOWDOWN_PATTERN = re.compile(r"(.*?): shows \[(.*?)\]")
     
@@ -98,7 +99,6 @@ class HandParser:
                     error_msg = f"Error parsing hand #{i+1}: {str(e)}"
                     logger.error(error_msg)
                     errors.append(error_msg)
-                    # Hand text debug logging removed to reduce verbosity
             
             # Log the results
             logger.info(f"Parsed {len(hands)} hands from file: {file_path}")
@@ -413,25 +413,59 @@ class HandParser:
                         participant['showed_cards'] = True
                         break
         
+        # Initialize pots data structure
+        hand_data['pots'] = []
+        
         # Parse summary
         for line in lines:
             # Parse pot and rake with better error handling
             summary_match = self.SUMMARY_PATTERN.search(line)
             if summary_match:
                 try:
+                    # Total pot amount (for backward compatibility)
                     pot_str = summary_match.group(1)
                     if pot_str:
                         pot = float(pot_str.replace(',', ''))
                         hand_data['pot'] = pot
                     else:
                         hand_data['pot'] = 0
+                    
+                    # Parse main pot and side pots
+                    main_pot_str = summary_match.group(2)
+                    if main_pot_str:
+                        main_pot = float(main_pot_str.replace(',', ''))
+                        hand_data['pots'].append({
+                            'pot_type': 'main',
+                            'amount': main_pot,
+                            'winners': []
+                        })
                         
-                    rake_str = summary_match.group(2)
+                        # Parse side pots (groups 3-9 could contain side pot amounts)
+                        for i in range(3, 10):
+                            side_pot_str = summary_match.group(i)
+                            if side_pot_str:
+                                side_pot = float(side_pot_str.replace(',', ''))
+                                hand_data['pots'].append({
+                                    'pot_type': f'side-{i-2}',  # side-1, side-2, etc.
+                                    'amount': side_pot,
+                                    'winners': []
+                                })
+                    else:
+                        # If no specific pots are mentioned, create a single main pot
+                        hand_data['pots'].append({
+                            'pot_type': 'main',
+                            'amount': hand_data['pot'],
+                            'winners': []
+                        })
+                    
+                    # Parse rake (now in group 10 due to additional side pot groups)
+                    rake_str = summary_match.group(10)
                     if rake_str:
                         rake = float(rake_str.replace(',', ''))
                         hand_data['rake'] = rake
                     else:
                         hand_data['rake'] = 0
+                        
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing pot/rake: {e}. Line: {line}")
                     # Set default values if parsing fails
@@ -439,38 +473,78 @@ class HandParser:
                         hand_data['pot'] = 0
                     if 'rake' not in hand_data or hand_data['rake'] is None:
                         hand_data['rake'] = 0
+                    
+                    # Ensure we have at least one pot
+                    if not hand_data['pots']:
+                        hand_data['pots'].append({
+                            'pot_type': 'main',
+                            'amount': hand_data['pot'],
+                            'winners': []
+                        })
             
             # Parse winners
             winner_match = self.WINNER_PATTERN.search(line)
             if winner_match:
                 player_name = winner_match.group(1)
                 amount = float(winner_match.group(2).replace(',', ''))
+                pot_type = winner_match.group(3) if winner_match.group(3) else 'main'  # Default to main pot if not specified
+                pot_number = winner_match.group(4) if winner_match.group(4) else None
+                
                 # Find the participant for this winner
                 participant = next((p for p in hand_data['participants'] if p['player_name'] == player_name), None)
                 
+                if not participant:
+                    logger.warning(f"Could not find participant for winner {player_name} in hand {hand_data.get('hand_id')}")
+                    continue
+                
+                # For backward compatibility, add to winners list
                 winner_data = {
                     'player_name': player_name,
                     'amount': amount,
+                    'participant_id': participant['id']
                 }
-                
-                # Add participant ID if found
-                if participant:
-                    winner_data['participant_id'] = participant['id']
                     
-                    # Update the participant's final stack and net won amount
-                    if participant['final_stack'] is None:
-                        # If not set yet, assume they ended with their starting stack plus winnings
-                        participant['final_stack'] = participant['stack'] + amount
-                    else:
-                        participant['final_stack'] += amount
-                        
-                    # Calculate net won (can be negative if they lost)
-                    if participant['net_won'] is None:
-                        participant['net_won'] = amount
-                    else:
-                        participant['net_won'] += amount
+                # Update the participant's final stack and net won amount
+                if participant['final_stack'] is None:
+                    # If not set yet, assume they ended with their starting stack plus winnings
+                    participant['final_stack'] = participant['stack'] + amount
+                else:
+                    participant['final_stack'] += amount
+                    
+                # Calculate net won (can be negative if they lost)
+                if participant['net_won'] is None:
+                    participant['net_won'] = amount
+                else:
+                    participant['net_won'] += amount
                 
                 hand_data['winners'].append(winner_data)
+                
+                # Determine which pot this winner belongs to
+                if pot_type == 'main':
+                    pot_type_str = 'main'
+                elif pot_type == 'side' and pot_number:
+                    pot_type_str = f'side-{pot_number}'
+                else:
+                    pot_type_str = 'main'  # Default to main pot
+                
+                # Find or create the target pot
+                target_pot = next((p for p in hand_data['pots'] if p['pot_type'] == pot_type_str), None)
+                
+                if not target_pot:
+                    # If the pot doesn't exist yet, create it
+                    target_pot = {
+                        'pot_type': pot_type_str,
+                        'amount': amount,  # Initial amount based on winner
+                        'winners': []
+                    }
+                    hand_data['pots'].append(target_pot)
+                
+                # Add the winner to the pot
+                pot_winner = {
+                    'participant_id': participant['id'],
+                    'amount': amount
+                }
+                target_pot['winners'].append(pot_winner)
             
             # Parse board if not already parsed
             if not hand_data['board']:

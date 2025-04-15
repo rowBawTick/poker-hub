@@ -36,7 +36,7 @@ class Hand(Base):
     small_blind = Column(Float, nullable=False, default=0)
     big_blind = Column(Float, nullable=False, default=0)
     ante = Column(Float, nullable=True)
-    pot = Column(Float, nullable=True, default=0)
+    pot = Column(Float, nullable=True, default=0)  # Total pot (kept for backward compatibility)
     rake = Column(Float, nullable=True, default=0)
     board = Column(String)  # Stored as space-separated cards
     button_seat = Column(Integer, nullable=True)  # Seat number of the button
@@ -45,7 +45,7 @@ class Hand(Base):
 
     participants = relationship("HandParticipant", back_populates="hand", cascade="all, delete-orphan")
     actions = relationship("Action", back_populates="hand", cascade="all, delete-orphan")
-    winners = relationship("Winner", back_populates="hand", cascade="all, delete-orphan")
+    pots = relationship("Pot", back_populates="hand", cascade="all, delete-orphan")
 
 
 class Player(Base):
@@ -113,22 +113,41 @@ class Action(Base):
     participant = relationship("HandParticipant", back_populates="actions", foreign_keys=[participant_id])
 
 
-class Winner(Base):
+# Winner table removed as it's redundant with PotWinner
+
+
+class Pot(Base):
     """
-    SQLAlchemy model for a winner of a hand.
+    SQLAlchemy model for a pot in a poker hand.
+    A hand can have a main pot and multiple side pots.
     """
-    __tablename__ = "winners"
+    __tablename__ = "pots"
 
     id = Column(Integer, primary_key=True, index=True)
-    hand_id = Column(Integer, ForeignKey("hands.id"), index=True)
-    player_id = Column(Integer, ForeignKey("players.id"), nullable=True, index=True)
-    player_name = Column(String, index=True)  # Keep for backward compatibility
-    participant_id = Column(Integer, ForeignKey("hand_participants.id"), nullable=True, index=True)
-    amount = Column(Float)
+    hand_id = Column(Integer, ForeignKey("hands.id"), nullable=False, index=True)
+    pot_type = Column(String, nullable=False)  # 'main', 'side-1', 'side-2', etc.
+    amount = Column(Float, nullable=False)  # Total amount in this pot
+    
+    # Relationships
+    hand = relationship("Hand", back_populates="pots")
+    winners = relationship("PotWinner", back_populates="pot", cascade="all, delete-orphan")
 
-    hand = relationship("Hand", back_populates="winners")
-    player = relationship("Player", foreign_keys=[player_id], backref="winnings")
-    participant = relationship("HandParticipant", foreign_keys=[participant_id], backref="winnings")
+
+class PotWinner(Base):
+    """
+    SQLAlchemy model for a winner of a specific pot.
+    This allows for split pots where multiple players win portions of the same pot.
+    """
+    __tablename__ = "pot_winners"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pot_id = Column(Integer, ForeignKey("pots.id"), nullable=False, index=True)
+    participant_id = Column(Integer, ForeignKey("hand_participants.id"), nullable=False, index=True)
+    amount = Column(Float, nullable=False)  # Amount won by this participant from this pot
+    
+    # Relationships
+    pot = relationship("Pot", back_populates="winners")
+    participant = relationship("HandParticipant", backref="pot_winnings")
 
 
 class HandFile(Base):
@@ -224,6 +243,20 @@ class Database:
             if 'showed_cards' not in existing_columns:
                 conn.execute('ALTER TABLE players ADD COLUMN showed_cards BOOLEAN DEFAULT FALSE')
                 logger.info("Added showed_cards column to players table")
+        
+        # Create the new pot tables if they don't exist
+        # We'll use SQLAlchemy's create_all for this as it's safer than raw SQL
+        # for creating new tables
+        existing_tables = inspector.get_table_names()
+        if 'pots' not in existing_tables:
+            # Create just the pots table
+            Pot.__table__.create(bind=self.engine, checkfirst=True)
+            logger.info("Created pots table")
+            
+        if 'pot_winners' not in existing_tables:
+            # Create just the pot_winners table
+            PotWinner.__table__.create(bind=self.engine, checkfirst=True)
+            logger.info("Created pot_winners table")
                 
         logger.info("Database migration completed successfully.")
 
@@ -284,6 +317,31 @@ class Database:
         session = self.get_session()
         try:
             # Track tournaments we've seen to avoid duplicate logging
+            # Check if hand already exists
+            existing_hand = session.query(Hand).filter(Hand.hand_id == hand_data['hand_id']).first()
+            if existing_hand:
+                logger.debug(f"Hand {hand_data['hand_id']} already exists in the database")
+                return
+            
+            # Create the hand record
+            hand = Hand(
+                hand_id=hand_data['hand_id'],
+                tournament_id=hand_data.get('tournament_id'),
+                game_type=hand_data.get('game_type'),
+                date_time=hand_data.get('date_time'),
+                small_blind=hand_data.get('small_blind', 0),
+                big_blind=hand_data.get('big_blind', 0),
+                ante=hand_data.get('ante', 0),
+                pot=hand_data.get('pot', 0),
+                rake=hand_data.get('rake', 0),
+                board=' '.join(hand_data.get('board', [])),
+                button_seat=hand_data.get('button_seat'),
+                max_players=hand_data.get('max_players'),
+                table_name=hand_data.get('table_name')
+            )
+            session.add(hand)
+            
+            # Track tournaments we've seen to avoid duplicate logging
             if not hasattr(self, '_processed_tournaments'):
                 self._processed_tournaments = set()
                 
@@ -293,28 +351,6 @@ class Database:
                 self._processed_tournaments.add(tournament_id)
                 logger.info(f"Processing tournament: {tournament_id} - {hand_data.get('game_type', '')}")
             
-            # Check if hand already exists
-            existing_hand = session.query(Hand).filter(Hand.hand_id == hand_data['hand_id']).first()
-            if existing_hand:
-                return
-
-            # Create new hand with proper handling of None values
-            hand = Hand(
-                hand_id=hand_data['hand_id'],
-                tournament_id=hand_data['tournament_id'],
-                game_type=hand_data['game_type'],
-                date_time=hand_data['date_time'],
-                small_blind=float(hand_data['small_blind']) if hand_data['small_blind'] is not None else 0,
-                big_blind=float(hand_data['big_blind']) if hand_data['big_blind'] is not None else 0,
-                ante=hand_data.get('ante'),
-                pot=hand_data.get('pot', 0),  # Default to 0 if missing
-                rake=hand_data.get('rake', 0),  # Default to 0 if missing
-                board=' '.join(hand_data['board']) if hand_data['board'] else None,
-                button_seat=hand_data.get('button_seat'),
-                max_players=hand_data.get('max_players'),
-                table_name=hand_data.get('table_name')
-            )
-            session.add(hand)
             session.flush()  # Flush to get the hand ID
 
             # Dictionary to map participant IDs to their objects
@@ -471,40 +507,30 @@ class Database:
                     )
                     session.add(action)
 
-            # Add winners
-            for winner_data in hand_data.get('winners', []):
-                # Find the participant for this winner
-                participant = None
-                
-                # Try to find by participant_id first (new format)
-                if winner_data.get('participant_id') and winner_data['participant_id'] in participant_objects:
-                    participant = participant_objects[winner_data['participant_id']]
-                
-                # Fall back to player_name (both formats)
-                elif winner_data.get('player_name'):
-                    # Try to find by player_name in participant_objects
-                    for p in participant_objects.values():
-                        if hasattr(p, 'player') and p.player and p.player.name == winner_data['player_name']:
-                            participant = p
-                            break
-                
-                # Fall back to 'player' field (old format)
-                elif winner_data.get('player') and winner_data['player'] in participant_objects:
-                    participant = participant_objects[winner_data['player']]
-                
-                # Create the winner record
-                winner = Winner(
+            # Winners are now handled through pot_winners
+            
+            # Add pots and pot winners
+            for pot_data in hand_data.get('pots', []):
+                # Create the pot record
+                pot = Pot(
                     hand_id=hand.id,
-                    player_name=winner_data.get('player_name', winner_data.get('player')),  # Support both formats
-                    amount=winner_data['amount']
+                    pot_type=pot_data['pot_type'],
+                    amount=pot_data['amount']
                 )
+                session.add(pot)
+                session.flush()  # Flush to get the pot ID
                 
-                # Add player and participant references if available
-                if participant:
-                    winner.player_id = participant.player_id
-                    winner.participant_id = participant.id
-                
-                session.add(winner)
+                # Add winners for this pot
+                for winner_data in pot_data.get('winners', []):
+                    # Find the participant for this winner
+                    participant_id = winner_data.get('participant_id')
+                    if participant_id and participant_id in participant_objects:
+                        pot_winner = PotWinner(
+                            pot_id=pot.id,
+                            participant_id=participant_objects[participant_id].id,
+                            amount=winner_data['amount']
+                        )
+                        session.add(pot_winner)
 
             # Commit the transaction
             session.commit()
@@ -526,10 +552,9 @@ class Database:
         # Initialize counters
         stats = {
             'tournaments': set(),
-            'players': set(),
+            'unique_players': set(),
             'hands': 0,
-            'actions': 0,
-            'participants': 0
+            'actions': 0
         }
         
         # Process each hand
@@ -539,13 +564,12 @@ class Database:
                 stats['tournaments'].add(hand_data['tournament_id'])
             
             for participant in hand_data.get('participants', []):
-                player_name = participant.get('name')
+                player_name = participant.get('player_name')
                 if player_name:
-                    stats['players'].add(player_name)
+                    stats['unique_players'].add(player_name)
             
             stats['hands'] += 1
             stats['actions'] += len(hand_data.get('actions', []))
-            stats['participants'] += len(hand_data.get('participants', []))
             
             # Store the hand
             self.store_hand(hand_data)
@@ -561,10 +585,6 @@ class Database:
             
             logger.info(f"  - Tournaments: {tournament_str}")
             
-        logger.info(f"  - Players: {len(stats['players'])}")
-        
+        logger.info(f"  - Unique Players: {len(stats['unique_players'])}")
         logger.info(f"  - Hands: {stats['hands']}")
-        
         logger.info(f"  - Actions: {stats['actions']}")
-        
-        logger.info(f"  - Participants: {stats['participants']}")
