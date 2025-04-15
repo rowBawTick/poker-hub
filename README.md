@@ -10,6 +10,7 @@ A poker statistics and analysis tool that works with PokerStars hand history fil
 - Vue.js frontend with interactive statistics dashboard
 - Player performance metrics (VPIP, PFR, Aggression Factor, etc.)
 - Recent hands tracking and profit/loss analysis
+- PokerStars notes import and export functionality
 
 ## Project Structure
 
@@ -18,6 +19,7 @@ A poker statistics and analysis tool that works with PokerStars hand history fil
   - `parser/` - Hand history parsing
   - `storage/` - Database and persistence
   - `api/` - FastAPI endpoints for frontend communication
+  - `poker_notes/` - PokerStars notes import/export functionality
 - `frontend/` - Vue.js frontend application
 
 ## Requirements
@@ -34,7 +36,18 @@ A poker statistics and analysis tool that works with PokerStars hand history fil
 
 ### 1. Backend Setup
 
-1. Install Python dependencies:
+1. Create and activate a virtual environment (recommended) from the project root:
+   ```bash
+    # On macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   
+   # On Windows
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+2. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
@@ -101,6 +114,28 @@ python main.py sync
    ```
 
 3. Access the application at http://localhost:8080
+
+### 3. Using the Notes Functionality
+
+The poker_notes module allows you to import and export PokerStars player notes.
+
+1. Make sure your virtual environment is activated
+
+2. Import notes from XML files:
+   ```bash
+   # From the project root
+   cd poker_hud
+   python3 notes.py import <username> <path_to_xml_file> [<path_to_another_xml_file> ...]
+   ```
+
+3. Export notes to XML file:
+   ```bash
+   # From the project root
+   cd poker_hud
+   python3 notes.py export <username> [--output <output_file_path>]
+   ```
+
+For more details, see the [Notes README](poker_hud/poker_notes/README.md).
 
 ## Syncing Hand Histories
 
