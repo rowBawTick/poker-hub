@@ -161,19 +161,19 @@ def import_notes(session: Session, user_id: int, notes_list: List[Dict], label_m
     return imported_count
 
 
-def import_notes_from_files(username: str, file_paths: List[str], database_url: str = DATABASE_URL) -> int:
+def import_notes_from_files(username: str, file_paths: List[str], database_url: str = None) -> int:
     """
     Import notes from XML files into the database.
     
     Args:
         username: Username.
         file_paths: List of paths to XML files.
-        database_url: Database URL.
+        database_url: Database URL (optional, will use default if not provided).
         
     Returns:
         Total number of notes imported.
     """
-    # Get database session
+    # Get database session (db_utils will handle empty database_url)
     session, _ = get_database_session(database_url)
     
     try:

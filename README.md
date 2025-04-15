@@ -1,6 +1,9 @@
 # Poker Hud
 
-A poker statistics and analysis tool that works with PokerStars hand history files. This application provides a comprehensive dashboard for tracking and analyzing your poker performance with a clean, modern interface.
+A poker statistics and analysis tool that works with PokerStars hand history files. 
+This application provides a dashboard for tracking and analyzing your poker performance.
+It also provides functionality for adding/merging your poker notes from different files and exporting to an xml file
+that can be uploaded to PokerStars. 
 
 ## Features
 
@@ -120,14 +123,14 @@ The poker_notes module allows you to import and export PokerStars player notes.
    ```bash
    # From the project root
    cd backend
-   python3 notes.py import <username> <path_to_xml_file> [<path_to_another_xml_file> ...]
+   python notes.py import <username> <path_to_xml_file> [<path_to_another_xml_file> ...]
    ```
 
 3. Export notes to XML file:
    ```bash
    # From the project root
    cd backend
-   python3 notes.py export <username> [--output <output_file_path>]
+   python notes.py export <username> [--output <output_file_path>]
    ```
 
 For more details, see the [Notes README](backend/poker_notes/README.md).

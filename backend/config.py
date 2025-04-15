@@ -15,7 +15,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 HAND_HISTORY_PATH = os.getenv('HAND_HISTORY_PATH')
 
 # Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./poker_hud.db')
+# Use absolute path to ensure consistent database location regardless of working directory
+DATABASE_URL = os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR}/poker_hud.db')
 
 # Application settings
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')

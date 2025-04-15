@@ -15,19 +15,23 @@ import os
 import sys
 from pathlib import Path
 
-# Get the configuration
+# Get the configuration and set up database path
+# Use an absolute path to ensure consistent database location
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
 try:
-    # Try relative import first
-    from ..config import DATABASE_URL
+    # Try to import the config
+    sys.path.insert(0, str(PROJECT_ROOT))
+    from backend.config import DATABASE_URL
 except ImportError:
-    # Fall back to direct import if run as script
-    try:
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-        from backend.config import DATABASE_URL
-    except ImportError:
-        # Default if all else fails
-        DATABASE_URL = 'sqlite:///./poker_hud.db'
-        print(f"Could not import config, using default: {DATABASE_URL}")
+    # If import fails, create a default database URL with absolute path
+    DATABASE_URL = f'sqlite:///{PROJECT_ROOT}/poker_hud.db'
+    print(f"Could not import config, using default: {DATABASE_URL}")
+
+# Ensure DATABASE_URL is not empty
+if not DATABASE_URL or DATABASE_URL.strip() == '':
+    DATABASE_URL = f'sqlite:///{PROJECT_ROOT}/poker_hud.db'
+    print(f"DATABASE_URL was empty, using default: {DATABASE_URL}")
 
 # Configure logging
 logging.basicConfig(
@@ -85,7 +89,7 @@ class Note(Base):
     label = relationship("Label", back_populates="notes")
 
 
-def get_database_session(database_url: str = DATABASE_URL) -> Tuple[Session, sessionmaker]:
+def get_database_session(database_url: str = None) -> Tuple[Session, sessionmaker]:
     """
     Create and return a database session.
     
@@ -95,6 +99,16 @@ def get_database_session(database_url: str = DATABASE_URL) -> Tuple[Session, ses
     Returns:
         A tuple containing the session and session maker.
     """
+    # Use the global DATABASE_URL if none provided
+    if database_url is None or database_url.strip() == '':
+        database_url = DATABASE_URL
+        
+    # Double-check that we have a valid database URL
+    if not database_url or database_url.strip() == '':
+        database_url = f'sqlite:///{PROJECT_ROOT}/poker_hud.db'
+        print(f"Using fallback database URL: {database_url}")
+    
+    # Create the engine and session
     engine = create_engine(database_url)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     

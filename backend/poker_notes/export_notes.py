@@ -78,19 +78,19 @@ def get_user_notes_and_labels(session: Session, username: str) -> Tuple[List[Dic
     return notes, labels
 
 
-def export_notes_to_file(username: str, output_file: str = None, database_url: str = DATABASE_URL) -> bool:
+def export_notes_to_file(username: str, output_file: str = None, database_url: str = None) -> bool:
     """
     Export notes from the database to an XML file.
     
     Args:
         username: Username.
         output_file: Output file path. If None, uses the default format "notes.{username}.xml".
-        database_url: Database URL.
+        database_url: Database URL (optional, will use default if not provided).
         
     Returns:
         True if successful, False otherwise.
     """
-    # Get database session
+    # Get database session (db_utils will handle empty database_url)
     session, _ = get_database_session(database_url)
     
     try:
@@ -130,7 +130,7 @@ def main():
     parser = argparse.ArgumentParser(description="Export poker notes to XML file.")
     parser.add_argument("username", help="Username for the notes.")
     parser.add_argument("--output", "-o", help="Output file path. Default: notes.{username}.xml")
-    parser.add_argument("--db", default=DATABASE_URL, help="Database URL.")
+    parser.add_argument("--db", help="Database URL. If not provided, uses the default configuration.")
     
     args = parser.parse_args()
     
