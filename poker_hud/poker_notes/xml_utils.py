@@ -92,7 +92,7 @@ def generate_xml(username: str, labels: List[Dict], notes: List[Dict]) -> ET.Ele
     root = ET.Element("notes")
     root.set("version", "1")
     
-    # Default PokerStars labels if none are provided
+    # Use the exact PokerStars default labels
     default_labels = [
         {"label_id": 0, "color": "30DBFF", "name": "Conservative"},
         {"label_id": 1, "color": "30FF97", "name": "Solid"},
@@ -106,38 +106,58 @@ def generate_xml(username: str, labels: List[Dict], notes: List[Dict]) -> ET.Ele
     
     # Add labels
     labels_elem = ET.SubElement(root, "labels")
-    
-    # Use provided labels or defaults
-    if labels and len(labels) > 0:
-        for label in labels:
-            label_elem = ET.SubElement(labels_elem, "label")
-            label_elem.set("id", str(label["label_id"]))
-            label_elem.set("color", label["color"])
-            label_elem.text = label["name"]
-    else:
-        # Use default labels
-        for label in default_labels:
-            label_elem = ET.SubElement(labels_elem, "label")
-            label_elem.set("id", str(label["label_id"]))
-            label_elem.set("color", label["color"])
-            label_elem.text = label["name"]
+    for label in default_labels:
+        label_elem = ET.SubElement(labels_elem, "label")
+        label_elem.set("id", str(label["label_id"]))
+        label_elem.set("color", label["color"])
+        label_elem.text = label["name"]
     
     # Add notes
     for note in notes:
-        note_elem = ET.SubElement(root, "note")
-        note_elem.set("player", note["player_name"])
+        # Get player name and handle special cases
+        player_name = note["player_name"]
         
-        if note["label_id"] is not None and note["label_id"] != -1:
-            note_elem.set("label", str(note["label_id"]))
+        # Skip notes with empty player names
+        if not player_name or player_name.strip() == "":
+            continue
+            
+        # Create note element
+        note_elem = ET.SubElement(root, "note")
+        
+        # PokerStars handles these special characters in player names differently
+        # We need to ensure they're preserved exactly as they appear
+        # Characters like #, !, +, (, ), -, spaces, etc. should be kept as-is
+        # We don't encode these special characters in player names
+        note_elem.set("player", player_name)
+        
+        # Set label ID, defaulting to 2 (Neutral) if not specified
+        label_id = note["label_id"]
+        if label_id is not None and label_id != -1:
+            # Ensure label ID is within valid range (0-7)
+            if 0 <= label_id <= 7:
+                note_elem.set("label", str(label_id))
+            else:
+                note_elem.set("label", "2")  # Default to Neutral
+        else:
+            note_elem.set("label", "2")  # Default to Neutral
         
         # Convert datetime to timestamp
         timestamp = int(note["last_updated"].timestamp())
         note_elem.set("update", str(timestamp))
         
-        # For empty notes, still include the closing tag instead of self-closing tag
+        # Handle content with proper encoding
         if note["content"]:
-            # Escape apostrophes as &apos; for PokerStars compatibility
-            content = note["content"].replace("'", "&apos;")
+            # Clean and encode the content for PokerStars compatibility
+            content = note["content"]
+            # Replace apostrophes
+            content = content.replace("'", "&apos;")
+            # Replace ampersands
+            content = content.replace("&", "&amp;")
+            # Replace less than/greater than
+            content = content.replace("<", "&lt;").replace(">", "&gt;")
+            # Replace quotes
+            content = content.replace('"', "&quot;")
+            
             note_elem.text = content
         else:
             note_elem.text = ""
@@ -157,39 +177,51 @@ def write_xml_to_file(root: ET.Element, file_path: str) -> bool:
         True if successful, False otherwise.
     """
     try:
-        # Create a custom XML string with proper formatting
+        # Create the XML declaration exactly as PokerStars expects
         xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
         
-        # Convert the ElementTree to a string
-        rough_string = ET.tostring(root, 'utf-8')
+        # Convert the ElementTree to a string manually to ensure proper formatting
+        xml_lines = [xml_declaration]
+        xml_lines.append('<notes version="1">\n')
         
-        # Parse with minidom to get pretty formatting
-        import xml.dom.minidom
-        reparsed = xml.dom.minidom.parseString(rough_string)
-        pretty_xml = reparsed.toprettyxml(indent='\t')
+        # Add labels section
+        xml_lines.append('\t<labels>\n')
+        for label_elem in root.find('labels').findall('label'):
+            label_id = label_elem.get('id')
+            color = label_elem.get('color')
+            name = label_elem.text or f"Label {label_id}"
+            xml_lines.append(f'\t\t<label id="{label_id}" color="{color}">{name}</label>\n')
+        xml_lines.append('\t</labels>\n')
         
-        # Remove extra blank lines that minidom adds
-        lines = [line for line in pretty_xml.split('\n') if line.strip()]
-        pretty_xml = '\n'.join(lines)
-        
-        # Replace self-closing tags with explicit closing tags
-        pretty_xml = pretty_xml.replace('/>', "></note>")
-        
-        # Replace the XML declaration with our custom one
-        if pretty_xml.startswith('<?xml'):
-            pretty_xml = xml_declaration + pretty_xml[pretty_xml.find('?>') + 2:]
-        else:
-            pretty_xml = xml_declaration + pretty_xml
+        # Add notes section
+        for note_elem in root.findall('note'):
+            player = note_elem.get('player')
+            label = note_elem.get('label', '2')
+            update = note_elem.get('update', '0')
+            content = note_elem.text or ""
             
-        # Make sure ampersands in content are properly encoded
-        pretty_xml = pretty_xml.replace("&amp;", "&amp;amp;")
+            # Ensure player name is preserved exactly as-is
+            # PokerStars expects these special characters to be unencoded in the XML
+            # Start note tag
+            note_line = f'\t<note player="{player}" label="{label}" update="{update}"'
+            
+            # If content is empty, use self-closing tag format that PokerStars expects
+            if not content.strip():
+                note_line += "></note>\n"
+            else:
+                note_line += f">{content}</note>\n"
+                
+            xml_lines.append(note_line)
         
-        # Make sure apostrophes are properly encoded
-        pretty_xml = pretty_xml.replace("'", "&apos;")
+        # Close notes tag
+        xml_lines.append('</notes>\n')
+        
+        # Join all lines to create the final XML
+        xml_content = ''.join(xml_lines)
         
         # Write to file
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(pretty_xml)
+            f.write(xml_content)
         
         logger.info(f"Successfully wrote XML to {file_path}")
         return True
