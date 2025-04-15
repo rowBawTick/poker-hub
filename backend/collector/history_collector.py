@@ -90,23 +90,49 @@ class HandHistoryCollector:
         """
         file_path_str = str(file_path)
 
-        # Skip if already processed
-        if file_path_str in self.processed_files or self.database.is_file_processed(file_path_str):
-            logger.debug(f"File already processed: {file_path}")
+        # Check if the file has already been processed successfully
+        if file_path_str in self.processed_files:
+            logger.debug(f"File already processed (in memory): {file_path}")
             return
+            
+        # Check database for file processing status
+        from backend.storage.database import HandFile
+        session = self.database.get_session()
+        try:
+            file_record = session.query(HandFile).filter(HandFile.file_path == file_path_str).first()
+            if file_record and file_record.status == "processed" and file_record.hand_count > 0:
+                logger.debug(f"File already processed successfully (in database): {file_path}")
+                self.processed_files.add(file_path_str)  # Add to in-memory cache
+                return
+            elif file_record:
+                # File exists in database but had errors or no hands - we'll reprocess it
+                logger.info(f"Reprocessing file with previous status '{file_record.status}': {file_path}")
+        finally:
+            self.database.close_session(session)
 
         logger.info(f"Processing hand history file: {file_path}")
 
         try:
+            # Parse the file - this will raise an exception if parsing fails
             hands = self.parser.parse_file(file_path)
+            
+            if not hands:
+                logger.warning(f"No hands found in file: {file_path}")
+                self.database.mark_file_processed(file_path_str, 0, "no_hands", "No hands found in file")
+                return
+                
+            # Store the hands in the database
             self.database.store_hands(hands)
-            self.database.mark_file_processed(file_path_str, len(hands))
+            
+            # Mark as successfully processed
+            self.database.mark_file_processed(file_path_str, len(hands), "processed")
             self.processed_files.add(file_path_str)
 
             logger.info(f"Successfully processed file with {len(hands)} hands: {file_path}")
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")
-            # Mark as error in database
+            # Mark as error in database but DO NOT add to processed_files set
+            # This ensures we'll try to process it again next time
             self.database.mark_file_processed(file_path_str, 0, "error", str(e))
 
     def sync_history_files(self) -> int:

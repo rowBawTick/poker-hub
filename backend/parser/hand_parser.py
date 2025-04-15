@@ -26,12 +26,18 @@ class HandParser:
         r"(.*?) \[(\d{4}/\d{2}/\d{2}) (\d{1,2}:\d{2}:\d{2}) (?:ET|UTC|WET)(?:.*)\]"  # Game type, date, time
     )
     
-    # Pattern to extract ante from tournament hands
+    # Patterns for blinds and antes
     ANTE_PATTERN = re.compile(r"(.*?): posts the ante (\d+)")
+    SMALL_BLIND_PATTERN = re.compile(r"(.*?): posts small blind (\d+)")
+    BIG_BLIND_PATTERN = re.compile(r"(.*?): posts big blind (\d+)")
     
+    # Pattern for player information with seat number and stack
     PLAYER_PATTERN = re.compile(
-        r"Seat (\d+): (.*?) \(\$?([\d,]+(?:\.\d+)?) in chips\)"  # Seat, player name, stack
+        r"Seat (\d+): (.*?) \(\$?([\d,]+(?:\.\d+)?) in chips(?:, \$?([\d.]+) bounty)?\)"  # Seat, player name, stack, bounty
     )
+    
+    # Pattern for table information
+    TABLE_PATTERN = re.compile(r"Table '([^']+)' (\d+)-max Seat #(\d+) is the button")
     
     ACTION_PATTERNS = {
         'fold': re.compile(r"(.*?): folds"),
@@ -42,7 +48,8 @@ class HandParser:
         'all-in': re.compile(r"(.*?): (calls|bets|raises) \$?([\d,]+(?:\.\d+)?)(?:.* to \$?([\d,]+(?:\.\d+)?))?(?:.* and is all-in)"),
     }
     
-    SUMMARY_PATTERN = re.compile(r"Total pot \$?([\d,]+(?:\.\d+)?) (?:\| Rake \$?([\d,]+(?:\.\d+)?))?")
+    # Updated pattern to handle different summary formats
+    SUMMARY_PATTERN = re.compile(r"Total pot \$?([\d,]+(?:\.\d+)?)(?:\s*\|\s*Rake \$?([\d,]+(?:\.\d+)?))?")
     
     WINNER_PATTERN = re.compile(r"(.*?) collected \$?([\d,]+(?:\.\d+)?) from pot")
     
@@ -63,6 +70,9 @@ class HandParser:
             
         Returns:
             List of dictionaries containing structured hand data.
+            
+        Raises:
+            Exception: If there is an error parsing the file or if no hands were successfully parsed.
         """
         logger.info(f"Parsing hand history file: {file_path}")
         
@@ -75,7 +85,8 @@ class HandParser:
             hand_texts = re.split(r'\n\n+', content)
             
             hands = []
-            for hand_text in hand_texts:
+            errors = []
+            for i, hand_text in enumerate(hand_texts):
                 if not hand_text.strip():
                     continue
                 
@@ -84,15 +95,27 @@ class HandParser:
                     if hand_data:
                         hands.append(hand_data)
                 except Exception as e:
-                    logger.error(f"Error parsing hand: {e}")
-                    logger.debug(f"Hand text: {hand_text[:100]}...")
+                    error_msg = f"Error parsing hand #{i+1}: {str(e)}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+                    logger.debug(f"Hand text: {hand_text[:200]}...")
             
+            # Log the results
             logger.info(f"Parsed {len(hands)} hands from file: {file_path}")
+            
+            # If we didn't parse any hands successfully and had errors, raise an exception
+            if len(hands) == 0 and errors:
+                error_summary = "\n".join(errors[:5])
+                if len(errors) > 5:
+                    error_summary += f"\n...and {len(errors) - 5} more errors"
+                raise Exception(f"Failed to parse any hands from file. Errors: {error_summary}")
+                
             return hands
             
         except Exception as e:
             logger.error(f"Error parsing file {file_path}: {e}")
-            return []
+            # Re-raise the exception to be handled by the caller
+            raise
     
     def parse_hand(self, hand_text: str) -> Optional[Dict[str, Any]]:
         """
@@ -103,6 +126,9 @@ class HandParser:
             
         Returns:
             Dictionary containing structured hand data, or None if parsing failed.
+            
+        Raises:
+            Exception: If there is an error parsing the hand.
         """
         # Skip empty hands
         if not hand_text.strip():
@@ -153,42 +179,151 @@ class HandParser:
             small_blind = header_match.group(3)
             big_blind = header_match.group(4)
 
-        # Initialize hand data
+        # Initialize hand data with default values for required fields
         hand_data = {
             'hand_id': hand_id,
             'tournament_id': tournament_id,
             'game_type': game_type,
             'date_time': date_time,
-            'small_blind': float(small_blind.replace('$', '')) if small_blind else None,
-            'big_blind': float(big_blind) if big_blind else None,
-            'players': {},
+            'small_blind': float(small_blind.replace('$', '')) if small_blind else 0,
+            'big_blind': float(big_blind) if big_blind else 0,
+            'participants': [],  # List of players participating in this hand
             'actions': [],
             'board': [],
             'winners': [],
-            'pot': None,
-            'rake': None,
-            'ante': None,
+            'pot': 0,  # Initialize to 0 to ensure it's never None
+            'rake': 0,  # Initialize to 0 to ensure it's never None
+            'ante': 0,  # Initialize to 0 to ensure it's never None
+            'button_seat': None,
+            'max_players': None,
+            'table_name': None,
         }
         
+        # Parse table information
+        for line in lines:
+            table_match = self.TABLE_PATTERN.search(line)
+            if table_match:
+                hand_data['table_name'] = table_match.group(1)
+                hand_data['max_players'] = int(table_match.group(2))
+                hand_data['button_seat'] = int(table_match.group(3))
+                break
+        
         # Parse players
+        player_dict = {}  # Temporary dict to help with action mapping
         for line in lines:
             player_match = self.PLAYER_PATTERN.search(line)
             if player_match:
                 seat = int(player_match.group(1))
                 player_name = player_match.group(2)
                 stack = float(player_match.group(3).replace(',', ''))
-                hand_data['players'][player_name] = {
+                bounty = float(player_match.group(4)) if player_match.group(4) else None
+                
+                # Create participant data (player in this specific hand)
+                participant_data = {
+                    'id': len(hand_data['participants']) + 1,  # Generate sequential ID for this hand
+                    'player_name': player_name,  # Store player name for lookup
                     'seat': seat,
                     'stack': stack,
                     'cards': None,
+                    'bounty': bounty,
+                    'is_small_blind': False,
+                    'is_big_blind': False,
+                    'is_button': seat == hand_data['button_seat'],
+                    'final_stack': None,  # Will be calculated after hand is parsed
+                    'net_won': None  # Will be calculated after hand is parsed
                 }
+                
+                hand_data['participants'].append(participant_data)
+                player_dict[player_name] = participant_data
         
-        # Parse antes
+        # Parse antes, small blinds, and big blinds
+        sequence_counter = 0
         for line in lines:
+            # Parse ante posts
             ante_match = self.ANTE_PATTERN.search(line)
-            if ante_match and hand_data['ante'] is None:
-                # Just record the ante amount once, it's the same for all players
-                hand_data['ante'] = float(ante_match.group(2))
+            if ante_match:
+                player_name = ante_match.group(1)
+                ante_amount = float(ante_match.group(2))
+                
+                # Set the ante amount in hand data
+                # If we've seen multiple antes, use the largest one
+                if hand_data['ante'] < ante_amount:
+                    hand_data['ante'] = ante_amount
+                
+                # Add ante post as an action
+                # Find the participant for this player
+                participant = next((p for p in hand_data['participants'] if p['player_name'] == player_name), None)
+                participant_id = participant['id'] if participant else None
+                
+                action_data = {
+                    'sequence': sequence_counter,
+                    'player_name': player_name,
+                    'participant_id': participant_id,
+                    'action_type': 'ante',
+                    'street': 'preflop',
+                    'amount': ante_amount,
+                    'is_all_in': False
+                }
+                hand_data['actions'].append(action_data)
+                sequence_counter += 1
+            
+            # Parse small blind posts
+            sb_match = self.SMALL_BLIND_PATTERN.search(line)
+            if sb_match:
+                player_name = sb_match.group(1)
+                sb_amount = float(sb_match.group(2))
+                
+                # Mark player as small blind
+                for participant in hand_data['participants']:
+                    if participant['player_name'] == player_name:
+                        participant['is_small_blind'] = True
+                        break
+                
+                # Add small blind post as an action
+                # Find the participant for this player
+                participant = next((p for p in hand_data['participants'] if p['player_name'] == player_name), None)
+                participant_id = participant['id'] if participant else None
+                
+                action_data = {
+                    'sequence': sequence_counter,
+                    'player_name': player_name,
+                    'participant_id': participant_id,
+                    'action_type': 'small_blind',
+                    'street': 'preflop',
+                    'amount': sb_amount,
+                    'is_all_in': False
+                }
+                hand_data['actions'].append(action_data)
+                sequence_counter += 1
+            
+            # Parse big blind posts
+            bb_match = self.BIG_BLIND_PATTERN.search(line)
+            if bb_match:
+                player_name = bb_match.group(1)
+                bb_amount = float(bb_match.group(2))
+                
+                # Mark player as big blind
+                for participant in hand_data['participants']:
+                    if participant['player_name'] == player_name:
+                        participant['is_big_blind'] = True
+                        break
+                
+                # Add big blind post as an action
+                # Find the participant for this player
+                participant = next((p for p in hand_data['participants'] if p['player_name'] == player_name), None)
+                participant_id = participant['id'] if participant else None
+                
+                action_data = {
+                    'sequence': sequence_counter,
+                    'player_name': player_name,
+                    'participant_id': participant_id,
+                    'action_type': 'big_blind',
+                    'street': 'preflop',
+                    'amount': bb_amount,
+                    'is_all_in': False
+                }
+                hand_data['actions'].append(action_data)
+                sequence_counter += 1
         
         # Parse actions
         current_street = 'preflop'
@@ -225,11 +360,19 @@ class HandParser:
                 if action_match:
                     player_name = action_match.group(1)
                     
+                    # Find the participant ID for this player
+                    participant = next((p for p in hand_data['participants'] if p['player_name'] == player_name), None)
+                    participant_id = participant['id'] if participant else None
+                    
                     action_data = {
-                        'player': player_name,
-                        'action': action_type,
+                        'sequence': sequence_counter,
+                        'player_name': player_name,
+                        'participant_id': participant_id,
+                        'action_type': action_type,
                         'street': current_street,
+                        'is_all_in': False
                     }
+                    sequence_counter += 1
                     
                     # Add amount for bets, calls, raises
                     if action_type in ['call', 'bet']:
@@ -254,37 +397,80 @@ class HandParser:
             if dealt_match:
                 player_name = dealt_match.group(1)
                 cards = dealt_match.group(2).split()
-                if player_name in hand_data['players']:
-                    hand_data['players'][player_name]['cards'] = cards
+                for participant in hand_data['participants']:
+                    if participant['player_name'] == player_name:
+                        participant['cards'] = cards
+                        break
             
             # Parse showdown
             showdown_match = self.SHOWDOWN_PATTERN.search(line)
             if showdown_match:
                 player_name = showdown_match.group(1)
                 cards = showdown_match.group(2).split()
-                if player_name in hand_data['players']:
-                    hand_data['players'][player_name]['cards'] = cards
-                    hand_data['players'][player_name]['showed_cards'] = True
+                for participant in hand_data['participants']:
+                    if participant['player_name'] == player_name:
+                        participant['cards'] = cards
+                        participant['showed_cards'] = True
+                        break
         
         # Parse summary
         for line in lines:
-            # Parse pot and rake
+            # Parse pot and rake with better error handling
             summary_match = self.SUMMARY_PATTERN.search(line)
             if summary_match:
-                pot = float(summary_match.group(1).replace(',', ''))
-                rake = float(summary_match.group(2).replace(',', '')) if summary_match.group(2) else 0
-                hand_data['pot'] = pot
-                hand_data['rake'] = rake
+                try:
+                    pot_str = summary_match.group(1)
+                    if pot_str:
+                        pot = float(pot_str.replace(',', ''))
+                        hand_data['pot'] = pot
+                    else:
+                        hand_data['pot'] = 0
+                        
+                    rake_str = summary_match.group(2)
+                    if rake_str:
+                        rake = float(rake_str.replace(',', ''))
+                        hand_data['rake'] = rake
+                    else:
+                        hand_data['rake'] = 0
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Error parsing pot/rake: {e}. Line: {line}")
+                    # Set default values if parsing fails
+                    if 'pot' not in hand_data or hand_data['pot'] is None:
+                        hand_data['pot'] = 0
+                    if 'rake' not in hand_data or hand_data['rake'] is None:
+                        hand_data['rake'] = 0
             
             # Parse winners
             winner_match = self.WINNER_PATTERN.search(line)
             if winner_match:
                 player_name = winner_match.group(1)
                 amount = float(winner_match.group(2).replace(',', ''))
-                hand_data['winners'].append({
-                    'player': player_name,
-                    'amount': amount
-                })
+                # Find the participant for this winner
+                participant = next((p for p in hand_data['participants'] if p['player_name'] == player_name), None)
+                
+                winner_data = {
+                    'player_name': player_name,
+                    'amount': amount,
+                }
+                
+                # Add participant ID if found
+                if participant:
+                    winner_data['participant_id'] = participant['id']
+                    
+                    # Update the participant's final stack and net won amount
+                    if participant['final_stack'] is None:
+                        # If not set yet, assume they ended with their starting stack plus winnings
+                        participant['final_stack'] = participant['stack'] + amount
+                    else:
+                        participant['final_stack'] += amount
+                        
+                    # Calculate net won (can be negative if they lost)
+                    if participant['net_won'] is None:
+                        participant['net_won'] = amount
+                    else:
+                        participant['net_won'] += amount
+                
+                hand_data['winners'].append(winner_data)
             
             # Parse board if not already parsed
             if not hand_data['board']:
