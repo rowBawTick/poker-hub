@@ -23,9 +23,9 @@ try:
 except ImportError:
     # When run as a script
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-    from poker_hud.config import DATABASE_URL
-    from poker_hud.poker_notes.db_utils import get_database_session, get_or_create_user, Label, Note
-    from poker_hud.poker_notes.xml_utils import generate_xml, write_xml_to_file
+    from backend.config import DATABASE_URL
+    from backend.poker_notes.db_utils import get_database_session, get_or_create_user, Label, Note
+    from backend.poker_notes.xml_utils import generate_xml, write_xml_to_file
 
 # Configure logging
 logging.basicConfig(

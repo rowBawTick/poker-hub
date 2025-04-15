@@ -7,9 +7,9 @@ import sys
 import time
 from pathlib import Path
 
-from poker_hud.collector.history_collector import HandHistoryCollector
-from poker_hud.parser.hand_parser import HandParser
-from poker_hud.storage.database import Database
+from backend.collector.history_collector import HandHistoryCollector
+from backend.parser.hand_parser import HandParser
+from backend.storage.database import Database
 
 # Configure logging
 logging.basicConfig(
@@ -67,7 +67,7 @@ def monitor_command(args):
     # Start the API server in a separate thread
     import uvicorn
     import threading
-    from poker_hud.api.stats_api import app
+    from backend.api.stats_api import app
 
     api_host = args.api_host
     api_port = args.api_port

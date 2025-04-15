@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session
 
-from poker_hud.config import DATABASE_URL
+from backend.config import DATABASE_URL
 
 # Configure logging
 logger = logging.getLogger(__name__)

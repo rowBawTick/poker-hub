@@ -49,7 +49,7 @@ Import notes from one or more XML files:
 
 ```bash
 # From the project root
-cd poker_hud
+cd backend
 python notes.py import <username> <path_to_xml_file> [<path_to_another_xml_file> ...]
 ```
 
@@ -71,7 +71,7 @@ Export notes to a PokerStars-compatible XML file:
 
 ```bash
 # From the project root
-cd poker_hud
+cd backend
 python notes.py export <username> [--output <output_file_path>]
 ```
 

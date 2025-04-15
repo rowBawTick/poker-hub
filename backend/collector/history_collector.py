@@ -11,8 +11,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent, FileModifiedEvent
 from dotenv import load_dotenv
 
-from poker_hud.parser.hand_parser import HandParser
-from poker_hud.storage.database import Database
+from backend.parser.hand_parser import HandParser
+from backend.storage.database import Database
 
 # Configure logging
 logging.basicConfig(
@@ -61,7 +61,7 @@ class HandHistoryCollector:
         """
         session = self.database.get_session()
         try:
-            from poker_hud.storage.database import HandFile
+            from backend.storage.database import HandFile
             processed_files = session.query(HandFile.file_path).all()
             for file_path, in processed_files:
                 self.processed_files.add(file_path)

@@ -16,8 +16,8 @@ from typing import List
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 # Import the modules
-from poker_hud.poker_notes.import_notes import import_notes_from_files
-from poker_hud.poker_notes.export_notes import export_notes_to_file
+from backend.poker_notes.import_notes import import_notes_from_files
+from backend.poker_notes.export_notes import export_notes_to_file
 
 # Configure logging
 logging.basicConfig(

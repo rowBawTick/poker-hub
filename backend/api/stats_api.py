@@ -7,7 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
-from poker_hud.storage.database import Database, Hand, Player, Action, Winner
+from backend.storage.database import Database, Hand, Player, Action, Winner
 
 # Configure logging
 logger = logging.getLogger(__name__)

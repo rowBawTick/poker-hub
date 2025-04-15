@@ -124,18 +124,18 @@ The poker_notes module allows you to import and export PokerStars player notes.
 2. Import notes from XML files:
    ```bash
    # From the project root
-   cd poker_hud
+   cd backend
    python3 notes.py import <username> <path_to_xml_file> [<path_to_another_xml_file> ...]
    ```
 
 3. Export notes to XML file:
    ```bash
    # From the project root
-   cd poker_hud
+   cd backend
    python3 notes.py export <username> [--output <output_file_path>]
    ```
 
-For more details, see the [Notes README](poker_hud/poker_notes/README.md).
+For more details, see the [Notes README](backend/poker_notes/README.md).
 
 ## Syncing Hand Histories
 

@@ -23,7 +23,7 @@ except ImportError:
     # Fall back to direct import if run as script
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-        from poker_hud.config import DATABASE_URL
+        from backend.config import DATABASE_URL
     except ImportError:
         # Default if all else fails
         DATABASE_URL = 'sqlite:///./poker_hud.db'
