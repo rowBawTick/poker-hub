@@ -78,7 +78,7 @@ def parse_xml_file(file_path: str) -> Tuple[Dict[int, Dict], List[Dict]]:
 
 def generate_xml(username: str, labels: List[Dict], notes: List[Dict]) -> ET.Element:
     """
-    Generate XML for poker notes.
+    Generate XML for poker notes in the exact format PokerStars expects.
     
     Args:
         username: Username for the notes.
@@ -88,13 +88,35 @@ def generate_xml(username: str, labels: List[Dict], notes: List[Dict]) -> ET.Ele
     Returns:
         XML Element tree root.
     """
-    # Create root element
+    # Create root element with version attribute
     root = ET.Element("notes")
+    root.set("version", "1")
+    
+    # Default PokerStars labels if none are provided
+    default_labels = [
+        {"label_id": 0, "color": "30DBFF", "name": "Conservative"},
+        {"label_id": 1, "color": "30FF97", "name": "Solid"},
+        {"label_id": 2, "color": "E1FF80", "name": "Neutral"},
+        {"label_id": 3, "color": "FF9B30", "name": "Custom Label 4"},
+        {"label_id": 4, "color": "FF304E", "name": "Bad player"},
+        {"label_id": 5, "color": "FF30D7", "name": "Aggressive"},
+        {"label_id": 6, "color": "303EFF", "name": "Reckless"},
+        {"label_id": 7, "color": "1985FF", "name": "Loose"}
+    ]
     
     # Add labels
-    if labels:
-        labels_elem = ET.SubElement(root, "labels")
+    labels_elem = ET.SubElement(root, "labels")
+    
+    # Use provided labels or defaults
+    if labels and len(labels) > 0:
         for label in labels:
+            label_elem = ET.SubElement(labels_elem, "label")
+            label_elem.set("id", str(label["label_id"]))
+            label_elem.set("color", label["color"])
+            label_elem.text = label["name"]
+    else:
+        # Use default labels
+        for label in default_labels:
             label_elem = ET.SubElement(labels_elem, "label")
             label_elem.set("id", str(label["label_id"]))
             label_elem.set("color", label["color"])
@@ -112,14 +134,20 @@ def generate_xml(username: str, labels: List[Dict], notes: List[Dict]) -> ET.Ele
         timestamp = int(note["last_updated"].timestamp())
         note_elem.set("update", str(timestamp))
         
-        note_elem.text = note["content"]
+        # For empty notes, still include the closing tag instead of self-closing tag
+        if note["content"]:
+            # Escape apostrophes as &apos; for PokerStars compatibility
+            content = note["content"].replace("'", "&apos;")
+            note_elem.text = content
+        else:
+            note_elem.text = ""
     
     return root
 
 
 def write_xml_to_file(root: ET.Element, file_path: str) -> bool:
     """
-    Write XML to file.
+    Write XML to file in the exact format PokerStars expects.
     
     Args:
         root: XML Element tree root.
@@ -129,8 +157,40 @@ def write_xml_to_file(root: ET.Element, file_path: str) -> bool:
         True if successful, False otherwise.
     """
     try:
-        tree = ET.ElementTree(root)
-        tree.write(file_path, encoding="utf-8", xml_declaration=True)
+        # Create a custom XML string with proper formatting
+        xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        
+        # Convert the ElementTree to a string
+        rough_string = ET.tostring(root, 'utf-8')
+        
+        # Parse with minidom to get pretty formatting
+        import xml.dom.minidom
+        reparsed = xml.dom.minidom.parseString(rough_string)
+        pretty_xml = reparsed.toprettyxml(indent='\t')
+        
+        # Remove extra blank lines that minidom adds
+        lines = [line for line in pretty_xml.split('\n') if line.strip()]
+        pretty_xml = '\n'.join(lines)
+        
+        # Replace self-closing tags with explicit closing tags
+        pretty_xml = pretty_xml.replace('/>', "></note>")
+        
+        # Replace the XML declaration with our custom one
+        if pretty_xml.startswith('<?xml'):
+            pretty_xml = xml_declaration + pretty_xml[pretty_xml.find('?>') + 2:]
+        else:
+            pretty_xml = xml_declaration + pretty_xml
+            
+        # Make sure ampersands in content are properly encoded
+        pretty_xml = pretty_xml.replace("&amp;", "&amp;amp;")
+        
+        # Make sure apostrophes are properly encoded
+        pretty_xml = pretty_xml.replace("'", "&apos;")
+        
+        # Write to file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(pretty_xml)
+        
         logger.info(f"Successfully wrote XML to {file_path}")
         return True
     except Exception as e:
