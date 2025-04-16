@@ -1,0 +1,72 @@
+PokerStars Hand #255592503396: Tournament #3875988217, $0.48+$0.50+$0.12 USD Hold'em No Limit - Level VII (125/250) - 2025/04/04 21:41:10 WET [2025/04/04 16:41:10 ET]
+Table '3875988217 8' 8-max Seat #3 is the button
+Seat 1: Player1 (13478 in chips, $1 bounty)
+Seat 2: Player2 (14261 in chips, $0.50 bounty)
+Seat 3: Player3 (210 in chips, $0.50 bounty)
+Seat 4: Player4 (33873 in chips, $1 bounty)
+Seat 5: Player5 (1206 in chips, $1.31 bounty)
+Seat 6: Player6 (27845 in chips, $1.06 bounty)
+Seat 7: Player7 (6580 in chips, $0.50 bounty)
+Seat 8: Player8 (1563 in chips, $0.50 bounty)
+Player1: posts the ante 38
+Player2: posts the ante 38
+Player3: posts the ante 38
+Player4: posts the ante 38
+Player5: posts the ante 38
+Player6: posts the ante 38
+Player7: posts the ante 38
+Player8: posts the ante 38
+Player4: posts small blind 125
+Player5: posts big blind 250
+*** HOLE CARDS ***
+Dealt to Player4 [7s 9h]
+Player6: raises 250 to 500
+Player7: folds
+Player8: calls 500
+Player1: folds
+Player2: calls 500
+Player3: calls 172 and is all-in
+Player4: calls 375
+Player5: raises 668 to 1168 and is all-in
+Player6: raises 918 to 2086
+Player8: calls 1025 and is all-in
+Player2: calls 1586
+Player4: folds
+*** FLOP *** [4d 3s Qc]
+Player6: bets 1250
+Player2: calls 1250
+*** TURN *** [4d 3s Qc] [Td]
+Player6: bets 1000
+Player2: raises 1750 to 2750
+Player6: calls 1750
+*** RIVER *** [4d 3s Qc Td] [2h]
+Player6: bets 1000
+Player2: calls 1000
+*** SHOW DOWN ***
+Player6: shows [7d 7c] (a pair of Sevens)
+Player2: mucks hand
+Player6 collected 11122 from side pot-3
+Player8: mucks hand
+Player6 collected 1071 from side pot-2
+Player5: mucks hand
+Player6 collected 4312 from side pot-1
+Player3: mucks hand
+Player6 collected 1336 from main pot
+Player8 is sitting out
+Player6 wins $0.25 for eliminating Player3 and their own bounty increases by $0.25 to $1.31
+Player6 wins $0.66 for eliminating Player5 and their own bounty increases by $0.65 to $1.96
+Player6 wins $0.25 for eliminating Player8 and their own bounty increases by $0.25 to $2.21
+Player8 finished the tournament
+Player5 finished the tournament
+Player3 finished the tournament
+*** SUMMARY ***
+Total pot 17841 Main pot 1336. Side pot-1 4312. Side pot-2 1071. Side pot-3 11122. | Rake 0
+Board [4d 3s Qc Td 2h]
+Seat 1: Player1 folded before Flop (didn't bet)
+Seat 2: Player2 mucked [Ks 6d]
+Seat 3: Player3 (button) mucked [Ah 3c]
+Seat 4: Player4 (small blind) folded before Flop
+Seat 5: Player5 (big blind) mucked [Ad 3d]
+Seat 6: Player6 showed [7d 7c] and won (17841) with a pair of Sevens
+Seat 7: Player7 folded before Flop (didn't bet)
+Seat 8: Player8 mucked [Kh 5h]

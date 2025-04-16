@@ -1,0 +1,59 @@
+PokerStars Hand #255495536452: Tournament #3873736130, $4.20+$0.80 USD Hold'em No Limit - Level I (10/20) - 2025/03/29 1:08:09 WET [2025/03/28 21:08:09 ET]
+Table '3873736130 1' 9-max Seat #7 is the button
+Seat 1: Player1 (1565 in chips)
+Seat 2: Player2 (1242 in chips)
+Seat 3: Player3 (1580 in chips)
+Seat 4: Player4 (1452 in chips)
+Seat 5: Player5 (2663 in chips)
+Seat 6: Player6 (1422 in chips)
+Seat 7: Player7 (1452 in chips)
+Seat 8: Player8 (365 in chips)
+Seat 9: Player9 (1759 in chips)
+Player1: posts the ante 3
+Player2: posts the ante 3
+Player3: posts the ante 3
+Player4: posts the ante 3
+Player5: posts the ante 3
+Player6: posts the ante 3
+Player7: posts the ante 3
+Player8: posts the ante 3
+Player9: posts the ante 3
+Player8: posts small blind 10
+Player9: posts big blind 20
+*** HOLE CARDS ***
+Dealt to Player4 [Qc 9c]
+Player1: folds
+Player2: folds
+Player3: calls 20
+Player4: raises 60 to 80
+Player5: calls 80
+Player6: calls 80
+Player7: folds
+Player8: raises 282 to 362 and is all-in
+Player9: folds
+Player3: folds
+Player4: folds
+Player5: calls 282
+Player6: raises 1057 to 1419 and is all-in
+Player5: folds
+Uncalled bet (1057) returned to marene
+*** FLOP *** [Tc Jd 8s]
+*** TURN *** [Tc Jd 8s] [Js]
+*** RIVER *** [Tc Jd 8s Js] [4h]
+*** SHOW DOWN ***
+Player8: shows [Kc Kd] (two pair, Kings and Jacks)
+Player6: shows [Ks Kh] (two pair, Kings and Jacks)
+Player8 collected 617 from pot
+Player6 collected 616 from pot
+*** SUMMARY ***
+Total pot 1233 | Rake 0
+Board [Tc Jd 8s Js 4h]
+Seat 1: Player1 folded before Flop (didn't bet)
+Seat 2: Player2 folded before Flop (didn't bet)
+Seat 3: Player3 folded before Flop
+Seat 4: Player4 folded before Flop
+Seat 5: Player5 folded before Flop
+Seat 6: Player6 showed [Ks Kh] and won (616) with two pair, Kings and Jacks
+Seat 7: Player7 (button) folded before Flop (didn't bet)
+Seat 8: Player8 (small blind) showed [Kc Kd] and won (617) with two pair, Kings and Jacks
+Seat 9: Player9 (big blind) folded before Flop

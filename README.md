@@ -99,6 +99,22 @@ If you only want to sync existing hand histories without starting the monitoring
 python main.py sync
 ```
 
+#### Option C: Parse a Single Hand History File
+
+If you want to parse a single hand history file for testing or analysis:
+
+```bash
+python backend/scripts/parse_file.py path/to/hand_history_file.txt
+```
+
+You can also save the parsed results to a JSON file:
+
+```bash
+python backend/scripts/parse_file.py path/to/hand_history_file.txt --output results.json --pretty
+```
+
+This is useful for debugging or analyzing specific hands without affecting your database.
+
 ### 2. Starting the Frontend
 
 1. Navigate to the frontend directory:
@@ -145,7 +161,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e backend  # Only needed first time
 
 # Run all tests from the project root
-python -m unittest discover -s backend/tests
+python -m unittest discover -s tests
 ```
 
 ## Syncing Hand Histories

@@ -1,0 +1,42 @@
+PokerStars Hand #255510109389: Tournament #3872576931, $0.46+$1.50+$0.24 USD Hold'em No Limit - Level XXVIII (1500/3000) - 2025/03/30 0:37:53 WET [2025/03/29 20:37:53 ET]
+Table '3872576931 155' 8-max Seat #8 is the button
+Seat 1: Player1 (42260 in chips, $7.03 bounty)
+Seat 2: Player2 (228315 in chips, $31.54 bounty)
+Seat 3: Player3 (59683 in chips, $4.68 bounty)
+Seat 4: Player4 (87539 in chips, $7.51 bounty)
+Seat 5: Player5 (46260 in chips, $9.29 bounty) is sitting out
+Seat 6: Player6 (405584 in chips, $5.62 bounty)
+Seat 7: Player7 (70305 in chips, $6.55 bounty)
+Seat 8: Player8 (307836 in chips, $17.13 bounty)
+Player1: posts the ante 500
+Player2: posts the ante 500
+Player3: posts the ante 500
+Player4: posts the ante 500
+Player5: posts the ante 500
+Player6: posts the ante 500
+Player7: posts the ante 500
+Player8: posts the ante 500
+Player1: posts small blind 1500
+Player2: posts big blind 3000
+*** HOLE CARDS ***
+Dealt to Player3 [9h Js]
+Player3: folds
+Player4: folds
+Player5: folds
+Player6: folds
+Player7: folds
+Player8: folds
+Player1: folds
+Uncalled bet (1500) returned to Player2
+Player2 collected 7000 from pot
+Player2: doesn't show hand
+*** SUMMARY ***
+Total pot 7000 | Rake 0
+Seat 1: Player1 (small blind) folded before Flop
+Seat 2: Player2 (big blind) collected (7000)
+Seat 3: Player3 folded before Flop (didn't bet)
+Seat 4: Player4 folded before Flop (didn't bet)
+Seat 5: Player5 folded before Flop (didn't bet)
+Seat 6: Player6 folded before Flop (didn't bet)
+Seat 7: Player7 folded before Flop (didn't bet)
+Seat 8: Player8 (button) folded before Flop (didn't bet)

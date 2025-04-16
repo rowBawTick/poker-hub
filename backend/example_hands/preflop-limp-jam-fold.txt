@@ -1,0 +1,41 @@
+PokerStars Hand #255495065399: Tournament #3872575757, $0.48+$0.50+$0.12 USD Hold'em No Limit - Level IX (100/200) - 2025/03/29 0:27:09 WET [2025/03/28 20:27:09 ET]
+Table '3872575757 33' 9-max Seat #5 is the button
+Seat 3: Player1 (7515 in chips, $0.75 bounty)
+Seat 4: Player2 (8045 in chips, $0.50 bounty)
+Seat 5: Player3 (9292 in chips, $1.25 bounty)
+Seat 6: Player4 (8295 in chips, $2.12 bounty)
+Seat 7: Player5 (1325 in chips, $0.75 bounty)
+Seat 8: Player6 (8733 in chips, $0.75 bounty)
+Seat 9: Player7 (20790 in chips, $1.75 bounty)
+Player1: posts the ante 25
+Player2: posts the ante 25
+Player3: posts the ante 25
+Player4: posts the ante 25
+Player5: posts the ante 25
+Player6: posts the ante 25
+Player7: posts the ante 25
+Player4: posts small blind 100
+Player5: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Player2 [Ks 3c]
+Player6: folds
+Player8 is disconnected
+Player7: folds
+Player1: calls 200
+Player2: folds
+Player3: folds
+Player4: raises 8070 to 8270 and is all-in
+Player5: folds
+Player1: folds
+Uncalled bet (8070) returned to Player4
+Player4 collected 775 from pot
+Player4: doesn't show hand
+*** SUMMARY ***
+Total pot 775 | Rake 0
+Seat 3: Player1 folded before Flop
+Seat 4: Player2 folded before Flop (didn't bet)
+Seat 5: Player3 (button) folded before Flop (didn't bet)
+Seat 6: Player4 (small blind) collected (775)
+Seat 7: Player5 (big blind) folded before Flop
+Seat 8: Player6 folded before Flop (didn't bet)
+Seat 9: Player7 folded before Flop (didn't bet)
