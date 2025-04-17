@@ -1,0 +1,60 @@
+PokerStars Hand #255495020223: Tournament #3872575757, $0.48+$0.50+$0.12 USD Hold'em No Limit - Level IX (100/200) - 2025/03/29 0:23:30 WET [2025/03/28 20:23:30 ET]
+Table '3872575757 33' 9-max Seat #8 is the button
+Seat 1: Player1 (740 in chips, $0.50 bounty)
+Seat 2: Player2 (6946 in chips, $0.75 bounty)
+Seat 3: Player3 (4700 in chips, $0.50 bounty)
+Seat 4: Player4 (8445 in chips, $0.50 bounty)
+Seat 5: Player5 (9692 in chips, $1.25 bounty)
+Seat 6: Player6 (4945 in chips, $1.87 bounty)
+Seat 7: Player7 (1425 in chips, $0.75 bounty)
+Seat 8: Player8 (8833 in chips, $0.75 bounty)
+Seat 9: Player9 (22190 in chips, $1.75 bounty)
+Player1: posts the ante 25
+Player2: posts the ante 25
+Player3: posts the ante 25
+Player4: posts the ante 25
+Player5: posts the ante 25
+Player6: posts the ante 25
+Player7: posts the ante 25
+Player8: posts the ante 25
+Player9: posts the ante 25
+Player9: posts small blind 100
+Player1: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Player4 [8d Kh]
+Player2: folds
+Player3: calls 200
+Player4: folds
+Player5: folds
+Player6: folds
+Player7: folds
+Player8: folds
+Player9: folds
+Player1: checks
+*** FLOP *** [Qh 3s 4d]
+Player1: checks
+Player3: checks
+*** TURN *** [Qh 3s 4d] [4c]
+Player1: checks
+Player3: bets 725
+Player1: calls 515 and is all-in
+Uncalled bet (210) returned to Player3
+*** RIVER *** [Qh 3s 4d 4c] [2c]
+*** SHOW DOWN ***
+Player1: shows [Kc 5h] (a pair of Fours)
+Player3: shows [Ad 6d] (a pair of Fours - Ace kicker)
+Player3 collected 1755 from pot
+Player3 wins $0.25 for eliminating Player1 and their own bounty increases by $0.25 to $0.75
+Player1 finished the tournament
+*** SUMMARY ***
+Total pot 1755 | Rake 0
+Board [Qh 3s 4d 4c 2c]
+Seat 1: Player1 (big blind) showed [Kc 5h] and lost with a pair of Fours
+Seat 2: Player2 folded before Flop (didn't bet)
+Seat 3: Player3 showed [Ad 6d] and won (1755) with a pair of Fours
+Seat 4: Player4 folded before Flop (didn't bet)
+Seat 5: Player5 folded before Flop (didn't bet)
+Seat 6: Player6 folded before Flop (didn't bet)
+Seat 7: Player7 folded before Flop (didn't bet)
+Seat 8: Player8 (button) folded before Flop (didn't bet)
+Seat 9: Player9 (small blind) folded before Flop

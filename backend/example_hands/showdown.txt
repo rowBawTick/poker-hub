@@ -1,0 +1,50 @@
+PokerStars Hand #255495032823: Tournament #3872575757, $0.48+$0.50+$0.12 USD Hold'em No Limit - Level IX (100/200) - 2025/03/29 0:24:31 WET [2025/03/28 20:24:31 ET]
+Table '3872575757 33' 9-max Seat #9 is the button
+Seat 3: Player1 (5715 in chips, $0.75 bounty)
+Seat 4: Player2 (8420 in chips, $0.50 bounty)
+Seat 5: Player3 (9667 in chips, $1.25 bounty)
+Seat 6: Player4 (4920 in chips, $1.87 bounty)
+Seat 7: Player5 (1400 in chips, $0.75 bounty)
+Seat 8: Player6 (8808 in chips, $0.75 bounty)
+Seat 9: Player7 (22065 in chips, $1.75 bounty)
+Player1: posts the ante 25
+Player2: posts the ante 25
+Player3: posts the ante 25
+Player4: posts the ante 25
+Player5: posts the ante 25
+Player6: posts the ante 25
+Player7: posts the ante 25
+Player1: posts small blind 100
+Player2: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Player2 [5h 3s]
+Player3: folds
+Player4: folds
+Player5: folds
+Player6: folds
+Player7: raises 200 to 400
+Player1: calls 300
+Player2: folds
+*** FLOP *** [Tc 3c Qd]
+Player1: bets 400
+Player7: calls 400
+*** TURN *** [Tc 3c Qd] [Js]
+Player1: bets 400
+Player7: calls 400
+*** RIVER *** [Tc 3c Qd Js] [Jh]
+Player1: checks
+Player7: checks
+*** SHOW DOWN ***
+Player1: shows [3d Ad] (two pair, Jacks and Threes)
+Player7: mucks hand
+Player1 collected 2775 from pot
+*** SUMMARY ***
+Total pot 2775 | Rake 0
+Board [Tc 3c Qd Js Jh]
+Seat 3: Player1 (small blind) showed [3d Ad] and won (2775) with two pair, Jacks and Threes
+Seat 4: Player2 (big blind) folded before Flop
+Seat 5: Player3 folded before Flop (didn't bet)
+Seat 6: Player4 folded before Flop (didn't bet)
+Seat 7: Player5 folded before Flop (didn't bet)
+Seat 8: Player6 folded before Flop (didn't bet)
+Seat 9: Player7 (button) mucked [Ac 4h]

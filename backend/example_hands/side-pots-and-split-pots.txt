@@ -1,0 +1,55 @@
+PokerStars Hand #255592443980: Tournament #3875988217, $0.48+$0.50+$0.12 USD Hold'em No Limit - Level VI (100/200) - 2025/04/04 21:37:52 WET [2025/04/04 16:37:52 ET]
+Table '3875988217 8' 8-max Seat #6 is the button
+Seat 1: Player1 (13944 in chips, $1 bounty)
+Seat 3: Player2 (8336 in chips, $0.50 bounty)
+Seat 4: Player3 (26994 in chips, $0.75 bounty)
+Seat 5: Player4 (9999 in chips, $1.31 bounty)
+Seat 6: Player5 (24832 in chips, $1.06 bounty)
+Seat 7: Player6 (2382 in chips, $0.50 bounty)
+Seat 8: Player7 (2529 in chips, $0.50 bounty)
+Player1: posts the ante 30
+Player2: posts the ante 30
+Player3: posts the ante 30
+Player4: posts the ante 30
+Player5: posts the ante 30
+Player6: posts the ante 30
+Player7: posts the ante 30
+Player6: posts small blind 100
+Player7: posts big blind 200
+*** HOLE CARDS ***
+Dealt to Player3 [Ks Jc]
+Player1: folds
+Player2: calls 200
+Player3: raises 600 to 800
+Player4: calls 800
+Player5: folds
+Player6: raises 800 to 1600
+Player7: folds
+Player2: calls 1400
+Player3: raises 25364 to 26964 and is all-in
+Player4: folds
+Player6: calls 752 and is all-in
+Player2: calls 6706 and is all-in
+Uncalled bet (18658) returned to Player3
+*** FLOP *** [2c 9d 3h]
+*** TURN *** [2c 9d 3h] [As]
+*** RIVER *** [2c 9d 3h As] [6c]
+*** SHOW DOWN ***
+Player2: shows [Kd Td] (high card Ace)
+Player3: shows [Ks Jc] (high card Ace - King+Jack kicker)
+Player3 collected 11908 from side pot
+Player6: shows [Jd Kc] (high card Ace)
+Player6 collected 4133 from main pot
+Player3 collected 4133 from main pot
+Player3 wins $0.25 for eliminating Player2 and their own bounty increases by $0.25 to $1
+Player2 finished the tournament
+*** SUMMARY ***
+Total pot 20174 Main pot 8266. Side pot 11908. | Rake 0
+Board [2c 9d 3h As 6c]
+Seat 1: Player1 folded before Flop (didn't bet)
+Seat 3: Player2 showed [Kd Td] and lost with high card Ace
+Seat 4: Player3 showed [Ks Jc] and won (16041) with high card Ace
+Seat 5: Player4 folded before Flop
+Seat 6: Player5 (button) folded before Flop (didn't bet)
+Seat 7: Player6 (small blind) showed [Jd Kc] and won (4133) with high card Ace
+Seat 8: Player7 (big blind) folded before Flop
