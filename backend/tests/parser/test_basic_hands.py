@@ -25,7 +25,7 @@ class TestBasicHandParsing(unittest.TestCase):
         3. The sum of all players' net_profit equals zero (since there's no rake)
         """
         # Parse the hand
-        hand_file = self.example_hands_dir / "preflop-walk_anon.txt"
+        hand_file = self.example_hands_dir / "preflop-walk.txt"
         hands = self.parser.parse_file(hand_file)
         
         # Verify we got exactly one hand
@@ -59,9 +59,9 @@ class TestBasicHandParsing(unittest.TestCase):
         # Small blind should lose ante + small blind
         self.assertEqual(small_blind['net_profit'], -2000)  # -500 (ante) - 1500 (small blind)
         
-        # Big blind should win the pot minus their contribution
-        # The calculation is: winnings (7000) - investment (3500) = 3500
-        expected_big_blind_profit = 7000 - 3500  # 7000 (pot) - 500 (ante) - 3000 (big blind)
+        # Big blind should win the pot and returned bets minus their investments
+        # The calculation is: - investments (-500 ante -3000 BB) + bet returned (1500) + winnings/pot (7000)
+        expected_big_blind_profit = - 3500 + 1500 + 7000
         self.assertEqual(big_blind['net_profit'], expected_big_blind_profit)
         
         # Regular players should only lose their ante

@@ -29,10 +29,16 @@ class PotParser(BaseParser):
     WINNER_PATTERN = re.compile(r"(.*?) collected \$?([\d,]+(?:\.\d+)?) from (?:(main|side)(?: pot)?(?:-(\d+))?|pot)")
     
     # Pattern for uncalled bets
+    # This handles both formats:
+    # 1. "Uncalled bet ($100) returned to Player1"
+    # 2. "Uncalled bet (100) returned to Player1"
     UNCALLED_BET_PATTERN = re.compile(r"Uncalled bet \(\$?([\d,]+(?:\.\d+)?)\) returned to (.*)")
     
     # Pattern for pot collection (without specifying pot type)
-    POT_COLLECTION_PATTERN = re.compile(r"(.*?) collected \$?([\d,]+(?:\.\d+)?) from pot")
+    # This handles both formats:
+    # 1. "Player collected 100 from pot"
+    # 2. "Player collected (100) from pot" (with parentheses)
+    POT_COLLECTION_PATTERN = re.compile(r"(.*?) collected \(?\$?([\d,]+(?:\.\d+)?)\)? from pot")
     
     # Pattern for board cards
     BOARD_PATTERN = re.compile(r"Board \[(.*?)\]")
@@ -97,6 +103,42 @@ class PotParser(BaseParser):
             'returned_bets': [],
             'pot_collections': []
         }
+        
+        # Parse the entire hand for pot collections and returned bets
+        for line in lines:
+            # Check for pot collections in the main hand text (before summary)
+            pot_collection_match = self.POT_COLLECTION_PATTERN.search(line)
+            if pot_collection_match:
+                try:
+                    player_name = pot_collection_match.group(1).strip()
+                    amount_str = pot_collection_match.group(2).replace(',', '')
+                    amount = float(amount_str)
+                    collection_data = {
+                        'player_name': player_name,
+                        'amount': amount
+                    }
+                    pot_data['pot_collections'].append(collection_data)
+                    # Also add to winners list for consistency
+                    self._add_winner_to_pot(pot_data, player_name, amount)
+                    logger.info(f"Found pot collection: {player_name} collected {amount} from pot")
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Error parsing pot collection: {e}. Line: {line}")
+            
+            # Check for uncalled bets in the main hand text
+            uncalled_bet_match = self.UNCALLED_BET_PATTERN.search(line)
+            if uncalled_bet_match:
+                try:
+                    amount_str = uncalled_bet_match.group(1).replace(',', '')
+                    amount = float(amount_str)
+                    player_name = uncalled_bet_match.group(2).strip()
+                    returned_bet_data = {
+                        'player_name': player_name,
+                        'amount': amount
+                    }
+                    pot_data['returned_bets'].append(returned_bet_data)
+                    logger.info(f"Found returned bet: {amount} to {player_name}")
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Error parsing uncalled bet: {e}. Line: {line}")
         
         # Parse summary section for pot information
         summary_found = False
@@ -282,6 +324,7 @@ class PotParser(BaseParser):
              })
 
         # Now, parse winners, board, and uncalled bets from ALL summary lines
+        # TODO: chrischambers 17/04/2025 - Not really necessary anymore but we could use this as a check.
         for line in summary_lines:
             # Skip the summary marker line itself
             if "*** SUMMARY ***" in line:
@@ -290,7 +333,7 @@ class PotParser(BaseParser):
             if pot_structure_parsed and line == structure_line:
                  continue
 
-            # Parse uncalled bets first
+            # Parse uncalled bets in the summary section (skip if already found in main text)
             uncalled_bet_match = self.UNCALLED_BET_PATTERN.search(line)
             if uncalled_bet_match:
                 try:
@@ -301,8 +344,10 @@ class PotParser(BaseParser):
                         'player_name': player_name,
                         'amount': amount
                     }
-                    if not any(b['player_name'] == player_name and b['amount'] == amount for b in pot_data['returned_bets']):
+                    # Check if this returned bet is already recorded
+                    if not any(b['player_name'] == player_name and abs(b['amount'] - amount) < 0.01 for b in pot_data['returned_bets']):
                         pot_data['returned_bets'].append(returned_bet_data)
+                        logger.info(f"Added returned bet from summary: {amount} to {player_name}")
                     continue # Processed as uncalled bet
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing uncalled bet: {e}. Line: {line}")
@@ -346,6 +391,11 @@ class PotParser(BaseParser):
                     amount_str = seat_collected_match.group(2).replace('$', '').replace(',', '')
                     amount = float(amount_str)
                     self._add_winner_to_pot(pot_data, player_name, amount, pot_type='main')
+                    
+                    # We don't add to pot_collections from the summary section
+                    # to avoid double-counting with collections found in the main hand text
+                    logger.info(f"Found pot collection in summary (not adding to avoid double-counting): {player_name} collected {amount}")
+                    
                     processed_winner = True
                 except (ValueError, IndexError) as e:
                      logger.warning(f"Error parsing SEAT_COLLECTED_PATTERN: {e}. Line: {line}")

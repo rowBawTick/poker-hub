@@ -109,7 +109,7 @@ class TestPlayerActionParser(unittest.TestCase):
     def test_parse_from_file(self):
         """Test parsing action data from an actual hand history file."""
         # Find a preflop walk example file
-        preflop_walk_file = self.example_hands_dir / "preflop-walk_anon.txt"
+        preflop_walk_file = self.example_hands_dir / "preflop-walk.txt"
         
         if not preflop_walk_file.exists():
             self.skipTest(f"Example file {preflop_walk_file} not found")

@@ -140,12 +140,13 @@ class HandParser:
             logger.warning("Could not parse action data from hand")
             return None
         
-        # Use the remaining lines from action parsing for pot parsing
-        # These should primarily be the summary section lines
+        # Use the remaining lines from action parsing for reference
         remaining_lines = action_data.pop('remaining_lines', remaining_lines)
         
-        # Parse pot and winner information
-        pot_data = self.pot_parser.parse_pot_lines(remaining_lines)
+        # For pot parsing, we need to see the entire hand to catch uncalled bets and pot collections
+        # that occur before the summary section
+        # Parse pot and winner information using the original lines
+        pot_data = self.pot_parser.parse_pot_lines(lines)
         if not pot_data:
             logger.warning("Could not parse pot data from hand")
             return None
@@ -214,126 +215,48 @@ class HandParser:
     
     def _calculate_net_profit(self, hand_data: Dict[str, Any]) -> None:
         """
-        Calculate net profit for each participant.
+        Calculate net profits for all participants by tracking all money movements.
         
         Args:
             hand_data: Hand data dictionary to update.
         """
-        # Special case for preflop walk scenario
-        is_preflop_walk = self._is_preflop_walk(hand_data)
+        logger.info("Calculating net profit for all participants")
         
-        if is_preflop_walk:
-            # Handle preflop walk scenario with precise calculations
-            self._calculate_preflop_walk_profits(hand_data)
-        else:
-            # Standard calculation for other scenarios
-            self._calculate_standard_profits(hand_data)
-    
-    def _is_preflop_walk(self, hand_data: Dict[str, Any]) -> bool:
-        """
-        Determine if this is a preflop walk scenario.
-        
-        A preflop walk is when everyone folds to the big blind.
-        
-        Args:
-            hand_data: Hand data dictionary.
-            
-        Returns:
-            True if this is a preflop walk scenario, False otherwise.
-        """
-        # Check if there's a pot collection but no returned bets
-        if hand_data.get('pot_collections') and not hand_data.get('returned_bets'):
-            # Check if all actions are either ante, small blind, big blind, or fold
-            action_types = set(action['action_type'] for action in hand_data['actions'])
-            valid_types = {'ante', 'small_blind', 'big_blind', 'fold'}
-            return action_types.issubset(valid_types)
-        return False
-    
-    def _calculate_preflop_walk_profits(self, hand_data: Dict[str, Any]) -> None:
-        """
-        Calculate net profits for a preflop walk scenario.
-        
-        In a preflop walk:
-        - Small blind loses ante + small blind
-        - Big blind wins the pot minus their contribution
-        - All other players lose only their ante
-        
-        Args:
-            hand_data: Hand data dictionary to update.
-        """
-        logger.info("Calculating profits for preflop walk scenario")
-        
-        # Find players by position
-        small_blind = next((p for p in hand_data['participants'] if p.get('is_small_blind')), None)
-        big_blind = next((p for p in hand_data['participants'] if p.get('is_big_blind')), None)
-        regular_players = [p for p in hand_data['participants'] 
-                          if not (p.get('is_small_blind') or p.get('is_big_blind'))]
-        
-        # Find ante amount (assume all antes are the same)
-        ante_amount = 0
-        for action in hand_data['actions']:
-            if action['action_type'] == 'ante':
-                ante_amount = action.get('amount', 0)
-                break
-        
-        # Calculate profits
-        if small_blind:
-            # Small blind loses ante + small blind
-            small_blind_amount = hand_data.get('small_blind', 0)
-            small_blind['net_profit'] = -(ante_amount + small_blind_amount)
-            logger.info(f"Small blind {small_blind['name']} net profit: {small_blind['net_profit']}")
-        
-        # Regular players lose only their ante
-        for player in regular_players:
-            player['net_profit'] = -ante_amount
-            logger.info(f"Regular player {player['name']} net profit: {player['net_profit']}")
-        
-        if big_blind:
-            # Big blind wins the pot minus their contribution
-            big_blind_amount = hand_data.get('big_blind', 0)
-            pot_amount = hand_data.get('pot', 0)
-            # The big blind contributes ante + big blind, but wins the entire pot
-            big_blind_contribution = ante_amount + big_blind_amount
-            big_blind['net_profit'] = pot_amount - big_blind_contribution
-            logger.info(f"Big blind {big_blind['name']} net profit: {big_blind['net_profit']}")
-        
-        # Verify the sum of all net profits is zero (no rake)
-        total_net_profit = sum(p['net_profit'] for p in hand_data['participants'])
-        if abs(total_net_profit) > 0.01:
-            logger.warning(f"Preflop walk profit calculation may be incorrect: total={total_net_profit}, expected=0")
-    
-    def _calculate_standard_profits(self, hand_data: Dict[str, Any]) -> None:
-        """
-        Calculate net profits for standard scenarios (non-preflop walks).
-        
-        Args:
-            hand_data: Hand data dictionary to update.
-        """
-        # Initialize a dictionary to track money put into the pot by each player
+        # Initialize dictionaries to track money put in and taken out by each player
         player_investments = {participant['name']: 0 for participant in hand_data['participants']}
+        player_winnings = {participant['name']: 0 for participant in hand_data['participants']}
         
         # Track money put into the pot through actions
         for action in hand_data['actions']:
             if action['action_type'] in ['ante', 'small_blind', 'big_blind', 'call', 'bet', 'raise', 'all-in']:
                 if 'amount' in action:
                     player_investments[action['player_name']] += action['amount']
+                    logger.info(f"Player {action['player_name']} invested {action['amount']} via {action['action_type']}")
         
-        # Calculate winnings for each player
-        player_winnings = {participant['name']: 0 for participant in hand_data['participants']}
-        
-        # Add pot winnings from winners list
-        for winner in hand_data['winners']:
-            player_name = winner['player_name']
-            amount = winner['amount']
-            player_winnings[player_name] += amount
-        
-        # Add returned bets (uncalled bets)
-        # These are bets that were returned to the player and weren't part of the pot
+        # Process returned bets (uncalled bets) first
         for returned_bet in hand_data.get('returned_bets', []):
             player_name = returned_bet['player_name']
             amount = returned_bet['amount']
-            # For net profit calculation, returned bets should be treated as if they were never bet
             player_investments[player_name] -= amount
+            logger.info(f"Player {player_name} had {amount} returned (uncalled bet)")
+        
+        # For winnings, prioritize pot collections from the main hand text
+        # If we have pot collections, use those as the source of truth
+        if hand_data.get('pot_collections', []):
+            logger.info("Using pot collections as the source of truth for winnings")
+            for pot_collection in hand_data.get('pot_collections', []):
+                player_name = pot_collection['player_name']
+                amount = pot_collection['amount']
+                player_winnings[player_name] += amount
+                logger.info(f"Player {player_name} collected {amount} from pot")
+        else:
+            # Otherwise, use the winners list from the summary section
+            logger.info("Using winners list as the source of truth for winnings")
+            for winner in hand_data['winners']:
+                player_name = winner['player_name']
+                amount = winner['amount']
+                player_winnings[player_name] += amount
+                logger.info(f"Player {player_name} won {amount} from pot")
         
         # Calculate net profit (winnings - investments)
         for participant in hand_data['participants']:
@@ -341,9 +264,9 @@ class HandParser:
             investment = player_investments.get(player_name, 0)
             winnings = player_winnings.get(player_name, 0)
             participant['net_profit'] = winnings - investment
+            logger.info(f"Player {player_name}: investment={investment}, winnings={winnings}, net_profit={participant['net_profit']}")
         
         # Verify that the sum of all net profits is close to negative rake
-        # This is a sanity check to ensure our calculations are correct
         total_net_profit = sum(p['net_profit'] for p in hand_data['participants'])
         expected_net_profit = -hand_data.get('rake', 0)
         
@@ -355,7 +278,7 @@ class HandParser:
         """
         Convert parsed hand data to database models.
         
-        Args:
+{{ ... }}
             hand_data: Dictionary containing parsed hand data.
             
         Returns:
