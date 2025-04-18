@@ -63,7 +63,7 @@ class Label(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    label_id = Column(Integer)  # Original label ID from XML
+    external_label_id = Column(Integer)  # Original label ID from XML
     color = Column(String)
     name = Column(String)
     
@@ -79,6 +79,7 @@ class Note(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     label_id = Column(Integer, ForeignKey("labels.id"), nullable=True)
+    external_label_id = Column(Integer, nullable=True)  # Original label ID from XML
     player_name = Column(String, index=True)
     content = Column(Text)
     last_updated = Column(DateTime)

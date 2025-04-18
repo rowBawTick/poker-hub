@@ -149,14 +149,16 @@ def generate_xml(username: str, labels: List[Dict], notes: List[Dict]) -> ET.Ele
         if note["content"]:
             # Clean and encode the content for PokerStars compatibility
             content = note["content"]
-            # Replace apostrophes
-            content = content.replace("'", "&apos;")
-            # Replace ampersands
-            content = content.replace("&", "&amp;")
-            # Replace less than/greater than
-            content = content.replace("<", "&lt;").replace(">", "&gt;")
-            # Replace quotes
-            content = content.replace('"', "&quot;")
+            # Only escape if the content doesn't already contain escaped entities
+            if not any(x in content for x in ['&amp;', '&lt;', '&gt;', '&quot;', '&apos;']):
+                # Need to replace ampersands first to avoid double-escaping
+                content = content.replace("&", "&amp;")
+                # Replace apostrophes
+                content = content.replace("'", "&apos;")
+                # Replace less than/greater than
+                content = content.replace("<", "&lt;").replace(">", "&gt;")
+                # Replace quotes
+                content = content.replace('"', "&quot;")
             
             note_elem.text = content
         else:
@@ -209,7 +211,20 @@ def write_xml_to_file(root: ET.Element, file_path: str) -> bool:
             if not content.strip():
                 note_line += "></note>\n"
             else:
-                note_line += f">{content}</note>\n"
+                # Only escape if the content doesn't already contain escaped entities
+                if not any(x in content for x in ['&amp;', '&lt;', '&gt;', '&quot;', '&apos;']):
+                    # Need to replace ampersands first to avoid double-escaping
+                    escaped_content = content.replace("&", "&amp;")
+                    # Replace apostrophes
+                    escaped_content = escaped_content.replace("'", "&apos;")
+                    # Replace less than/greater than
+                    escaped_content = escaped_content.replace("<", "&lt;").replace(">", "&gt;")
+                    # Replace quotes
+                    escaped_content = escaped_content.replace('"', "&quot;")
+                    note_line += f">{escaped_content}</note>\n"
+                else:
+                    # Content already has escaped entities, use as is
+                    note_line += f">{content}</note>\n"
                 
             xml_lines.append(note_line)
         

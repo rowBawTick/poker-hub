@@ -55,10 +55,10 @@ def get_user_notes_and_labels(session: Session, username: str) -> Tuple[List[Dic
     # Get labels
     labels_query = session.query(Label).filter(Label.user_id == user.id)
     labels = []
-    
+
     for label in labels_query:
         labels.append({
-            "label_id": label.label_id,
+            "label_id": label.external_label_id,
             "color": label.color,
             "name": label.name
         })
@@ -70,7 +70,7 @@ def get_user_notes_and_labels(session: Session, username: str) -> Tuple[List[Dic
     for note in notes_query:
         notes.append({
             "player_name": note.player_name,
-            "label_id": note.label_id,
+            "label_id": note.external_label_id,
             "content": note.content,
             "last_updated": note.last_updated
         })
